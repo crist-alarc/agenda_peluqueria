@@ -89,6 +89,78 @@ export type Database = {
           },
         ]
       }
+      allocations: {
+        Row: {
+          active: boolean
+          booking_id: string
+          booking_item_id: string
+          business_id: string
+          ends_at: string
+          id: string
+          professional_id: string | null
+          resource_id: string
+          starts_at: string
+        }
+        Insert: {
+          active?: boolean
+          booking_id: string
+          booking_item_id: string
+          business_id: string
+          ends_at: string
+          id?: string
+          professional_id?: string | null
+          resource_id: string
+          starts_at: string
+        }
+        Update: {
+          active?: boolean
+          booking_id?: string
+          booking_item_id?: string
+          business_id?: string
+          ends_at?: string
+          id?: string
+          professional_id?: string | null
+          resource_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allocations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allocations_booking_item_id_fkey"
+            columns: ["booking_item_id"]
+            isOneToOne: false
+            referencedRelation: "booking_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allocations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allocations_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allocations_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -176,6 +248,267 @@ export type Database = {
             columns: ["resource_id"]
             isOneToOne: false
             referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_addons: {
+        Row: {
+          active: boolean
+          addon_id: string
+          addon_name: string
+          booking_id: string
+          branch_id: string
+          business_id: string
+          ends_at: string
+          id: string
+          quantity: number
+          starts_at: string
+          unit_price_clp: number
+        }
+        Insert: {
+          active?: boolean
+          addon_id: string
+          addon_name: string
+          booking_id: string
+          branch_id: string
+          business_id: string
+          ends_at: string
+          id?: string
+          quantity: number
+          starts_at: string
+          unit_price_clp: number
+        }
+        Update: {
+          active?: boolean
+          addon_id?: string
+          addon_name?: string
+          booking_id?: string
+          branch_id?: string
+          business_id?: string
+          ends_at?: string
+          id?: string
+          quantity?: number
+          starts_at?: string
+          unit_price_clp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_addons_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_addons_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_addons_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_items: {
+        Row: {
+          booking_id: string
+          business_id: string
+          duration_minutes: number
+          ends_at: string
+          id: string
+          logistics_business_id: string | null
+          modality: Database["public"]["Enums"]["booking_modality"]
+          owner_business_id: string
+          partnership_id: string | null
+          position: number
+          price_clp: number
+          service_id: string
+          service_name: string
+          starts_at: string
+        }
+        Insert: {
+          booking_id: string
+          business_id: string
+          duration_minutes: number
+          ends_at: string
+          id?: string
+          logistics_business_id?: string | null
+          modality?: Database["public"]["Enums"]["booking_modality"]
+          owner_business_id: string
+          partnership_id?: string | null
+          position: number
+          price_clp: number
+          service_id: string
+          service_name: string
+          starts_at: string
+        }
+        Update: {
+          booking_id?: string
+          business_id?: string
+          duration_minutes?: number
+          ends_at?: string
+          id?: string
+          logistics_business_id?: string | null
+          modality?: Database["public"]["Enums"]["booking_modality"]
+          owner_business_id?: string
+          partnership_id?: string | null
+          position?: number
+          price_clp?: number
+          service_id?: string
+          service_name?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_logistics_business_id_fkey"
+            columns: ["logistics_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_owner_business_id_fkey"
+            columns: ["owner_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          branch_id: string
+          business_id: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          channel: Database["public"]["Enums"]["booking_channel"]
+          created_at: string
+          created_by_user_id: string | null
+          customer_id: string
+          ends_at: string
+          id: string
+          notes: string | null
+          sold_by_user_id: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          total_clp: number
+          updated_at: string
+          visible_brand_business_id: string
+        }
+        Insert: {
+          branch_id: string
+          business_id: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          channel: Database["public"]["Enums"]["booking_channel"]
+          created_at?: string
+          created_by_user_id?: string | null
+          customer_id: string
+          ends_at: string
+          id?: string
+          notes?: string | null
+          sold_by_user_id?: string | null
+          starts_at: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_clp: number
+          updated_at?: string
+          visible_brand_business_id: string
+        }
+        Update: {
+          branch_id?: string
+          business_id?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          channel?: Database["public"]["Enums"]["booking_channel"]
+          created_at?: string
+          created_by_user_id?: string | null
+          customer_id?: string
+          ends_at?: string
+          id?: string
+          notes?: string | null
+          sold_by_user_id?: string | null
+          starts_at?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_clp?: number
+          updated_at?: string
+          visible_brand_business_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_sold_by_user_id_fkey"
+            columns: ["sold_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_visible_brand_business_id_fkey"
+            columns: ["visible_brand_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -324,37 +657,52 @@ export type Database = {
       businesses: {
         Row: {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
+          cancellation_hours: number
           created_at: string
           email: string | null
           id: string
           industry_code: string
+          max_advance_days: number
+          min_advance_minutes: number
           name: string
           organization_id: string
           phone: string | null
+          public_booking_enabled: boolean
+          slot_interval_minutes: number
           slug: string
           timezone: string
         }
         Insert: {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
+          cancellation_hours?: number
           created_at?: string
           email?: string | null
           id?: string
           industry_code: string
+          max_advance_days?: number
+          min_advance_minutes?: number
           name: string
           organization_id: string
           phone?: string | null
+          public_booking_enabled?: boolean
+          slot_interval_minutes?: number
           slug: string
           timezone?: string
         }
         Update: {
           booking_mode?: Database["public"]["Enums"]["booking_mode"]
+          cancellation_hours?: number
           created_at?: string
           email?: string | null
           id?: string
           industry_code?: string
+          max_advance_days?: number
+          min_advance_minutes?: number
           name?: string
           organization_id?: string
           phone?: string | null
+          public_booking_enabled?: boolean
+          slot_interval_minutes?: number
           slug?: string
           timezone?: string
         }
@@ -371,6 +719,57 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          business_id: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -823,6 +1222,26 @@ export type Database = {
         }
         Returns: string
       }
+      app_booking_context: {
+        Args: {
+          p_branch_id: string
+          p_business_id: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      app_create_booking: {
+        Args: {
+          p_addons?: Json
+          p_branch_id: string
+          p_business_id: string
+          p_customer: Json
+          p_items: Json
+          p_notes?: string
+        }
+        Returns: string
+      }
       app_create_business: {
         Args: {
           p_branch_address?: string
@@ -834,14 +1253,30 @@ export type Database = {
         }
         Returns: string
       }
+      app_public_business: { Args: { p_slug: string }; Returns: Json }
     }
     Enums: {
+      booking_channel:
+        | "public_link"
+        | "reception"
+        | "seller"
+        | "partner"
+        | "reseller"
+      booking_modality: "own" | "full_service" | "equipment_loan"
       booking_mode:
         | "appointment"
         | "fixed_slot"
         | "capacity"
         | "rental"
         | "queue"
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "checked_in"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "no_show"
       membership_role:
         | "owner"
         | "admin"
@@ -977,12 +1412,29 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      booking_channel: [
+        "public_link",
+        "reception",
+        "seller",
+        "partner",
+        "reseller",
+      ],
+      booking_modality: ["own", "full_service", "equipment_loan"],
       booking_mode: [
         "appointment",
         "fixed_slot",
         "capacity",
         "rental",
         "queue",
+      ],
+      booking_status: [
+        "pending",
+        "confirmed",
+        "checked_in",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "no_show",
       ],
       membership_role: [
         "owner",

@@ -12,8 +12,10 @@ cualquier otra documentación del repositorio. Resumen de las reglas de trabajo 
 
 ## Estado actual del repositorio
 
-Monorepo pnpm según las directrices (ver `README.md`). **Fase actual: 1 · Fundaciones** (implementada,
-pendiente de aprobación). Decisiones tomadas: `docs/adr/0001-fase-1-fundaciones.md`.
+Monorepo pnpm según las directrices (ver `README.md`).
+- **Fase 1 · Fundaciones:** cerrada (aprobada por el dueño). Decisiones: `docs/adr/0001-fase-1-fundaciones.md`.
+- **Fase 2 · MVP peluquería:** en curso, en entregas 2A–2D. 2A (reservas) implementada.
+  Decisiones: `docs/adr/0002-fase-2a-reservas.md`.
 
 Comandos de verificación antes de cada push: `pnpm typecheck`, `pnpm test`, `pnpm test:db`
 (PostgreSQL local) y, si cambia la interfaz, `pnpm --filter @agenda/web e2e` con Supabase local.

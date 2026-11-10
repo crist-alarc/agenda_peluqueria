@@ -23,14 +23,25 @@ export type Permission =
   | 'branches.create'
   | 'team.manage'
   | 'audit.view'
-  | 'plan.view';
+  | 'plan.view'
+  /** Ver la agenda (staff: solo la propia; lo filtra la base). */
+  | 'bookings.view'
+  /** Crear reservas y cambiar su estado (recepción). */
+  | 'bookings.manage'
+  | 'customers.view';
 
 const MATRIX: Record<Role, readonly Permission[]> = {
-  owner: ['business.update', 'catalog.view', 'catalog.manage', 'branches.create', 'team.manage', 'audit.view', 'plan.view'],
-  admin: ['business.update', 'catalog.view', 'catalog.manage', 'branches.create', 'team.manage', 'audit.view', 'plan.view'],
-  branch_admin: ['catalog.view', 'plan.view'],
-  receptionist: ['catalog.view'],
-  staff: ['catalog.view'],
+  owner: [
+    'business.update', 'catalog.view', 'catalog.manage', 'branches.create', 'team.manage', 'audit.view', 'plan.view',
+    'bookings.view', 'bookings.manage', 'customers.view',
+  ],
+  admin: [
+    'business.update', 'catalog.view', 'catalog.manage', 'branches.create', 'team.manage', 'audit.view', 'plan.view',
+    'bookings.view', 'bookings.manage', 'customers.view',
+  ],
+  branch_admin: ['catalog.view', 'plan.view', 'bookings.view', 'bookings.manage', 'customers.view'],
+  receptionist: ['catalog.view', 'bookings.view', 'bookings.manage', 'customers.view'],
+  staff: ['catalog.view', 'bookings.view'],
   seller: ['catalog.view'],
 };
 

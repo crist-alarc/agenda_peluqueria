@@ -36,7 +36,15 @@ describe('permisos por rol', () => {
     }
   });
 
-  it('recepción y staff solo ven el catálogo', () => {
+  it('recepción gestiona reservas; staff solo ve su agenda', () => {
+    expect(can(receptionist, 'bookings.manage')).toBe(true);
+    expect(can({ role: 'staff', branchIds: [] }, 'bookings.view')).toBe(true);
+    expect(can({ role: 'staff', branchIds: [] }, 'bookings.manage')).toBe(false);
+    expect(can({ role: 'staff', branchIds: [] }, 'customers.view')).toBe(false);
+    expect(can({ role: 'seller', branchIds: [] }, 'bookings.manage')).toBe(false);
+  });
+
+  it('recepción y staff no gestionan el catálogo', () => {
     expect(can(receptionist, 'catalog.view')).toBe(true);
     expect(can(receptionist, 'catalog.manage')).toBe(false);
     expect(can({ role: 'staff', branchIds: [] }, 'team.manage')).toBe(false);

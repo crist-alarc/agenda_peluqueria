@@ -4,7 +4,7 @@
  * repositorios de este paquete, que reciben un `DbClient`.
  */
 import { createServerClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
 export type DbClient = SupabaseClient<Database>;
@@ -39,5 +39,21 @@ export function createDbClient(config: DbConfig, cookies: CookieAdapter): DbClie
       getAll: () => cookies.getAll(),
       setAll: (toSet) => cookies.setAll(toSet as CookieToSet[]),
     },
+  });
+}
+
+/**
+ * Cliente con la clave de SERVICIO. Solo para el servidor (nunca el navegador):
+ * lo usa el link público para crear reservas después de validar el horario
+ * con el motor de disponibilidad (directrices, sección 21).
+ */
+export function createServiceDbClient(env: Record<string, string | undefined> = process.env): DbClient {
+  const { url } = readDbConfig(env);
+  const secret = env.SUPABASE_SECRET_KEY;
+  if (!secret) {
+    throw new Error('Falta SUPABASE_SECRET_KEY en las variables de entorno del servidor');
+  }
+  return createClient<Database>(url, secret, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 }

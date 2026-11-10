@@ -250,3 +250,64 @@ export const newPasswordSchema = z
 export function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Datos no válidos';
 }
+
+// ---------------------------------------------------------------------------
+// Reservas (fase 2A)
+// ---------------------------------------------------------------------------
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha no válida');
+
+export const slotQuerySchema = z.object({
+  businessId: uuid,
+  branchId: uuid,
+  date: isoDate,
+  serviceIds: z.array(uuid).min(1, 'Elige al menos un servicio').max(10),
+  preferredPersonId: uuid.nullable().optional(),
+  addons: z
+    .array(z.object({ addonId: uuid, quantity: z.coerce.number().int().min(1).max(20) }))
+    .max(10)
+    .default([]),
+});
+export type SlotQuery = z.infer<typeof slotQuerySchema>;
+
+const customerFields = {
+  fullName: name('Tu nombre'),
+  phone: z
+    .string({ message: 'El teléfono es obligatorio' })
+    .trim()
+    .min(8, 'Teléfono no válido')
+    .max(20, 'Teléfono no válido')
+    .regex(/^\+?[\d\s()-]+$/, 'Teléfono no válido'),
+  email: z
+    .union([z.literal(''), z.email('Email no válido')])
+    .optional()
+    .transform((v) => (v ? v.toLowerCase() : null)),
+};
+
+export const publicBookingSchema = slotQuerySchema.extend({
+  startsAt: z.iso.datetime({ offset: true, message: 'Horario no válido' }),
+  ...customerFields,
+  notes: optionalText(300),
+});
+
+export const receptionBookingSchema = slotQuerySchema
+  .extend({
+    startsAt: z.iso.datetime({ offset: true, message: 'Horario no válido' }),
+    customerId: uuid.optional(),
+    fullName: z.string().trim().max(120).optional(),
+    phone: z.string().trim().max(20).optional(),
+    email: customerFields.email,
+    notes: optionalText(300),
+  })
+  .refine((b) => b.customerId || (b.fullName && b.phone && b.phone.length >= 8), {
+    message: 'Elige un cliente o ingresa nombre y teléfono',
+    path: ['fullName'],
+  });
+
+export const bookingSettingsSchema = z.object({
+  businessId: uuid,
+  slotIntervalMinutes: z.coerce.number().int().min(5).max(120),
+  minAdvanceMinutes: z.coerce.number().int().min(0, 'No puede ser negativo').max(10080),
+  maxAdvanceDays: z.coerce.number().int().min(1).max(365),
+  cancellationHours: z.coerce.number().int().min(0).max(168),
+  publicBookingEnabled: checkbox,
+});

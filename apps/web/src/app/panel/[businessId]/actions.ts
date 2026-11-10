@@ -10,6 +10,7 @@ import {
   addonSchema,
   addonStockSchema,
   blockSchema,
+  bookingSettingsSchema,
   branchSchema,
   can,
   canAssignRole,
@@ -281,6 +282,41 @@ export async function removeMemberAction(_: ActionState, form: FormData): Promis
     await repo.removeMember(db, idSchema.parse(form.get('membershipId')));
     revalidate(business.id, '/equipo');
     return ok('Persona quitada del equipo');
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reservas: configuración y vínculo profesional ↔ cuenta
+// ---------------------------------------------------------------------------
+export async function updateBookingSettingsAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const { db, business } = await contextFor(form, 'business.update');
+    const input = bookingSettingsSchema.parse(formToObject(form));
+    await repo.updateBookingSettings(db, business.id, {
+      slot_interval_minutes: input.slotIntervalMinutes,
+      min_advance_minutes: input.minAdvanceMinutes,
+      max_advance_days: input.maxAdvanceDays,
+      cancellation_hours: input.cancellationHours,
+      public_booking_enabled: input.publicBookingEnabled,
+    });
+    revalidatePath(`/panel/${business.id}`, 'layout');
+    return ok(t.saved);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function linkProfessionalAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const { db, business } = await contextFor(form, 'team.manage');
+    const professionalId = idSchema.parse(form.get('professionalId'));
+    const raw = form.get('userId');
+    const userId = raw ? idSchema.parse(raw) : null;
+    await repo.linkProfessionalUser(db, professionalId, userId);
+    revalidate(business.id, '/recursos');
+    return ok(userId ? 'Cuenta vinculada: verá su propia agenda' : 'Cuenta desvinculada');
   } catch (error) {
     return toActionError(error);
   }

@@ -1,22 +1,24 @@
-import { canManageBranch, checkLimit } from '@agenda/core';
-import { countByBusiness, getEntitlements, listBranches, listResources, type Resource } from '@agenda/db';
+import { can, canManageBranch, checkLimit } from '@agenda/core';
+import { countByBusiness, getEntitlements, listBranches, listMembers, listResources, type Member, type Resource } from '@agenda/db';
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, EmptyState, Field, Input, PageHeader, Select } from '@agenda/ui';
 import { ActionForm, SubmitButton } from '@/components/action-form';
 import { HoursEditor } from '@/components/hours-editor';
 import { requireBusiness } from '@/lib/session';
 import { t, weekdayName } from '@/lib/texts';
-import { deleteResourceAction, saveResourceAction } from '../actions';
+import { deleteResourceAction, linkProfessionalAction, saveResourceAction } from '../actions';
 
 export const metadata = { title: 'Recursos' };
 
 export default async function ResourcesPage({ params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
   const { db, business, membership } = await requireBusiness(businessId);
-  const [resources, branches, entitlements, count] = await Promise.all([
+  const canLink = can(membership, 'team.manage');
+  const [resources, branches, entitlements, count, members] = await Promise.all([
     listResources(db, business.id),
     listBranches(db, business.id),
     getEntitlements(db, business.id),
     countByBusiness(db, 'resources', business.id),
+    canLink ? listMembers(db, business.id) : Promise.resolve([] as Member[]),
   ]);
   const limit = checkLimit(entitlements, 'resources', count);
   const manageableBranches = branches.filter((b) => canManageBranch(membership, b.id));
@@ -102,6 +104,7 @@ export default async function ResourcesPage({ params }: { params: Promise<{ busi
               branchName={branchName.get(r.branch_id) ?? ''}
               editable={canManageBranch(membership, r.branch_id)}
               branches={manageableBranches.map((b) => ({ id: b.id, name: b.name }))}
+              members={canLink ? members : null}
             />
           ))}
         </div>
@@ -116,12 +119,14 @@ function ResourceCard({
   branchName,
   editable,
   branches,
+  members,
 }: {
   resource: Resource;
   businessId: string;
   branchName: string;
   editable: boolean;
   branches: Array<{ id: string; name: string }>;
+  members: Member[] | null;
 }) {
   return (
     <Card>
@@ -190,6 +195,25 @@ function ResourceCard({
                   <SubmitButton>Guardar recurso</SubmitButton>
                 </div>
               </ActionForm>
+              {r.type === 'person' && r.professional && members && (
+                <ActionForm action={linkProfessionalAction} className="mt-4 flex flex-wrap items-end gap-2 border-t pt-4">
+                  <input type="hidden" name="businessId" value={businessId} />
+                  <input type="hidden" name="professionalId" value={r.professional.id} />
+                  <Field label="Cuenta del equipo" hint="Para que esta persona vea su propia agenda al ingresar">
+                    <Select name="userId" defaultValue={r.professional.user_id ?? ''} className="w-64">
+                      <option value="">Sin vincular</option>
+                      {members.map((m) => (
+                        <option key={m.userId} value={m.userId}>
+                          {m.fullName ?? m.email} ({t.roles[m.role]})
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <SubmitButton variant="outline" size="sm">
+                    Vincular
+                  </SubmitButton>
+                </ActionForm>
+              )}
               <ActionForm action={deleteResourceAction} confirm={`¿Eliminar ${r.name}?`} className="mt-4 border-t pt-4">
                 <input type="hidden" name="businessId" value={businessId} />
                 <input type="hidden" name="resourceId" value={r.id} />
