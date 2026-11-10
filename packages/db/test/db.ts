@@ -47,20 +47,18 @@ export class Session {
   constructor(
     private readonly pool: pg.Pool,
     readonly userId: string | null,
+    /** 'service_role' simula al servidor de la app usando la clave de servicio. */
+    readonly role: 'anon' | 'authenticated' | 'service_role' = userId ? 'authenticated' : 'anon',
   ) {}
 
   async query<T extends pg.QueryResultRow = pg.QueryResultRow>(sql: string, params: unknown[] = []): Promise<T[]> {
     const client = await this.pool.connect();
     try {
       await client.query('begin');
-      if (this.userId) {
-        await client.query(`select set_config('request.jwt.claims', $1, true)`, [
-          JSON.stringify({ sub: this.userId, role: 'authenticated' }),
-        ]);
-        await client.query('set local role authenticated');
-      } else {
-        await client.query('set local role anon');
-      }
+      await client.query(`select set_config('request.jwt.claims', $1, true)`, [
+        JSON.stringify(this.userId ? { sub: this.userId, role: this.role } : { role: this.role }),
+      ]);
+      await client.query(`set local role ${this.role}`);
       const result = await client.query<T>(sql, params);
       await client.query('commit');
       return result.rows;
