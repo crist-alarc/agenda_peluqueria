@@ -4,8 +4,8 @@ Plataforma SaaS para que pequeños negocios de servicios en Chile gestionen su a
 barberías, canchas, inflables, veterinarias y más. **Fuente de verdad del proyecto:
 [`docs/DIRECTRICES.md`](docs/DIRECTRICES.md).** Decisiones de arquitectura en [`docs/adr/`](docs/adr).
 
-**Fase actual:** 1 · Fundaciones — cuentas y roles, organización → negocio → sucursal, recursos,
-servicios, adicionales con stock, planes y derechos, auditoría y RLS.
+**Fase actual:** 2 · MVP peluquería. Hecho: Fase 1 (fundaciones) y 2A (reservas: motor de
+disponibilidad, link público `/r/<negocio>`, agenda de recepción y clientes).
 
 ## Estructura (monorepo pnpm)
 
@@ -33,6 +33,7 @@ npx supabase status --workdir packages/db -o env   # copia API_URL y ANON_KEY
 #   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 #   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<ANON_KEY>
 #   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+#   SUPABASE_SECRET_KEY=<SERVICE_ROLE_KEY>   (solo servidor: crea reservas del link público)
 
 pnpm dev        # http://localhost:3000
 ```
@@ -58,6 +59,9 @@ GitHub Actions ejecuta los tres niveles en cada PR (`.github/workflows/ci.yml`).
 
 1. Vercel → proyecto → *Settings → Build and Deployment → Root Directory*: `apps/web`.
 2. La URL y la clave pública de Supabase vienen en `apps/web/.env.production` (no son secretas).
+   **Secreto obligatorio** (Vercel → *Settings → Environment Variables*, solo servidor):
+   `SUPABASE_SECRET_KEY` = clave *secret* de Supabase (*Project Settings → API Keys*). La usa el link
+   público para crear reservas después de validar el horario. Nunca va en el repositorio.
 3. Supabase → *Authentication → URL Configuration*: agregar la URL de Vercel en *Site URL* y
    `https://<tu-app>.vercel.app/**` en *Redirect URLs*.
 
