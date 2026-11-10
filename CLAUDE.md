@@ -12,6 +12,6 @@ cualquier otra documentación del repositorio. Resumen de las reglas de trabajo 
 
 ## Estado actual del repositorio
 
-El código existente (Vite + React, una sola peluquería, publicado en GitHub Pages) es un **prototipo anterior
+El código existente (Vite + React, una sola peluquería, publicado en GitHub Pages y Vercel) es un **prototipo anterior
 a las directrices**. No sigue el modelo multi-negocio ni el stack definido (Next.js, Tailwind, monorepo).
 Fase actual: **1. Fundaciones** (pendiente de iniciar).

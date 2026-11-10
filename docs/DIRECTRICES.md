@@ -1,6 +1,8 @@
 # Directrices del proyecto — App Agenda (nombre provisorio)
 
-> **Versión:** 1.0 · **Fecha:** 2026-11-09 · **Autor:** Cristóbal Alarcón
+> **Versión:** 1.2 · **Fecha:** 2026-11-10 · **Autor:** Cristóbal Alarcón
+> **Cambios 1.2:** pnpm y monorepo (sección 3), planes de infraestructura y costos (3.2), estrategia de notificaciones con escalamiento email → WhatsApp (18), WhatsApp como add-on con cuota (17), decisiones pendientes actualizadas (25).
+> **Cambios 1.1:** principio de portabilidad (sección 2 y 3.1) y reglas de seguridad de Supabase (sección 21).
 >
 > Este documento es la fuente de verdad del proyecto. Claude Code debe leerlo antes de cada tarea y respetarlo. Si una petición contradice este documento, **se debe señalar la contradicción antes de escribir código**. Cuando se tome una decisión nueva, se actualiza este documento en el mismo cambio.
 
@@ -33,6 +35,7 @@ Peluquerías · Barberías · Peluquería canina · Arriendo de canchas deportiv
 6. **Trazabilidad completa.** Toda reserva registra canal, quién la vendió y con qué marca se atendió. Las acciones relevantes quedan en un registro de auditoría.
 7. **Privacidad entre negocios.** Un negocio nunca ve las reservas, clientes ni precios de otro, salvo lo estrictamente necesario dentro de un acuerdo.
 8. **Construir por fases.** No implementar funciones de fases futuras, pero sí dejar el modelo de datos preparado cuando este documento lo indique.
+9. **Portabilidad.** La app debe poder migrar a otra nube (Azure, Google Cloud, AWS) sin reescribirse. No se usan servicios exclusivos de un proveedor cuando existe una alternativa estándar, y el acceso a cada proveedor queda aislado en una capa propia (ver 3.1).
 
 ---
 
@@ -48,12 +51,13 @@ Peluquerías · Barberías · Peluquería canina · Arriendo de canchas deportiv
 | App móvil (fase posterior) | **Expo** (React Native), misma base Supabase y mismos tipos |
 | Primera versión móvil | **PWA** instalable desde el día 1 |
 | Hosting | Vercel (web) + Supabase |
-| Emails | Proveedor transaccional (ej. Resend) |
+| Gestor de paquetes | **pnpm** con *workspaces* (monorepo) |
+| Emails | **Resend** (desarrollo y primeros clientes); **Amazon SES** al escalar. Siempre detrás de una interfaz propia |
 | WhatsApp | API de WhatsApp Business vía proveedor (ej. Twilio) |
 | Pagos (futuro) | Webpay / Mercado Pago / Flow (por definir) |
 | Tests | Vitest (unitarios) + Playwright (flujos críticos) |
 
-**Estructura sugerida (monorepo):**
+**Estructura (monorepo con pnpm workspaces):** un solo repositorio con varios proyectos que comparten código. La web y la app móvil usan la misma lógica de `/packages/core`, así un cambio en precios, disponibilidad o comisiones llega a ambas en el mismo commit. No se agregan otros lenguajes de backend (ej. Python/FastAPI) salvo un servicio aparte muy específico y justificado.
 ```
 /apps/web          → Next.js
 /apps/mobile       → Expo (fase posterior)
@@ -62,6 +66,54 @@ Peluquerías · Barberías · Peluquería canina · Arriendo de canchas deportiv
 /packages/ui       → componentes compartidos
 /docs              → este documento y decisiones (ADR)
 ```
+
+### 3.1 Portabilidad e independencia de proveedores
+
+Objetivo: si en el futuro conviene migrar a Azure, Google Cloud o AWS (por costos, exigencias de clientes grandes, normativa de datos o necesidad de más control), la migración debe tomar días o semanas, no reescribir la app.
+
+**Vercel (web):**
+- Next.js se usa de forma estándar, de modo que pueda correr en Docker, Azure Container Apps o Google Cloud Run.
+- **No usar almacenamiento propio de Vercel** (bases de datos, KV, Blob, Edge Config). Los datos y archivos van en Supabase.
+- No depender de funciones exclusivas de Vercel para lógica de negocio.
+- Las tareas largas o en segundo plano (recordatorios masivos, liquidaciones) no se ejecutan en funciones de Vercel: van en un servicio de tareas separado (ver abajo).
+
+**Supabase (datos, auth, archivos):**
+- **Base de datos:** PostgreSQL estándar. Esquema, funciones y políticas RLS se escriben en SQL estándar dentro de migraciones versionadas en el repositorio.
+- **Acceso a datos:** el código accede a la base mediante una **capa de acceso a datos** (`/packages/db`, repositorios por entidad). Los componentes de UI y `/packages/core` **nunca** llaman directamente a `supabase-js`.
+- **Usuario actual en RLS:** las políticas no usan `auth.uid()` directamente; usan una función propia (ej. `app.current_user_id()`) que la envuelve. Si se cambia de proveedor de autenticación, se modifica solo esa función.
+- **Autenticación:** se usa Supabase Auth, pero toda la app la consume a través de un módulo propio (`/packages/auth`). Los usuarios se pueden exportar con sus contraseñas cifradas (bcrypt), por lo que una migración no obliga a resetear contraseñas.
+- **Archivos:** se usan mediante una interfaz propia compatible con S3 (subir, descargar, borrar, URL firmada).
+- **Tareas en segundo plano:** la lógica vive en `/packages/core` (TypeScript portable). Las Edge Functions o cron de Supabase solo la invocan; no contienen lógica de negocio.
+- **Región:** elegir la región más cercana a Chile disponible (São Paulo).
+- **Respaldos propios:** además de los respaldos de Supabase, programar un `pg_dump` periódico guardado fuera de Supabase, con prueba de restauración documentada.
+
+Cada vez que se agregue un proveedor externo nuevo (email, WhatsApp, pagos), se integra detrás de una interfaz propia para poder cambiarlo.
+
+### 3.2 Planes de infraestructura y costos (referencia, precios a noviembre 2026)
+
+**Desarrollo:** Vercel Hobby + Supabase Free + Resend Free, sin costo. Vercel Hobby es solo para uso personal no comercial, y Supabase Free pausa los proyectos tras 7 días sin actividad y no tiene respaldos diarios: **no se usan con negocios reales**.
+
+**Producción (desde el primer negocio real):**
+
+| Servicio | Plan | Costo aprox. | Incluye (resumen) |
+|---|---|---|---|
+| Vercel | Pro | US$20/mes | US$20 de crédito de uso, CDN, dominio propio |
+| Supabase | Pro | US$25/mes + uso | 8 GB de base, 100.000 MAU, 250 GB de tráfico, respaldos diarios, crédito para 1 instancia Micro |
+| Resend | Pro | US$20/mes | 50.000 emails/mes (~38 peluquerías) |
+
+**Capacidad estimada** (peluquería de barrio: ~650 reservas/mes, ~400 clientes activos/mes): unas **150 a 250 peluquerías** con Vercel Pro + Supabase Pro. El primer límite probable es la potencia de la instancia de base de datos; subirla cuesta decenas de dólares al mes. El costo de infraestructura es de ~US$0,20 a 0,25 por peluquería al mes.
+
+**Supabase Team (US$599/mes)** solo se evalúa si un cliente exige el informe SOC 2 o SSO; no es necesario por capacidad.
+
+**Costo por mensaje** (para decidir canales):
+
+| Canal | Costo unitario | 1.300 mensajes/mes (una peluquería) |
+|---|---|---|
+| WhatsApp (Chile, utilidad/autenticación) | US$0,023 | ~US$30 |
+| Email (Resend Pro) | ~US$0,0004 | ~US$0,52 |
+| Email (Amazon SES) | ~US$0,00016 | ~US$0,21 |
+
+Conclusión de diseño: **WhatsApp es el costo variable más importante del producto**, mucho mayor que la infraestructura. Por eso nunca va ilimitado en el plan base (ver secciones 17 y 18). Revisar estos valores antes de fijar precios: los proveedores los cambian.
 
 ---
 
@@ -124,7 +176,7 @@ Los permisos se validan en servidor y en RLS. Un `branch_admin` de una sucursal 
 ### 5.3 Inicio de sesión
 
 - **Con cuenta:** email + contraseña (con recuperación por email).
-- **Invitado:** nombre + teléfono, verificado con **código por WhatsApp**, solo para reservar.
+- **Invitado:** nombre + teléfono, verificado con **código por WhatsApp**, solo para reservar. Cada código tiene costo (sección 3.2): se permite también verificar por **código al email** cuando el invitado lo entrega, y el negocio puede elegir cuál ofrecer primero.
 - Si un invitado crea cuenta después y **verifica** el mismo teléfono o email, se le vinculan sus reservas anteriores. **Nunca vincular sin verificación.**
 
 ---
@@ -170,7 +222,7 @@ ORGANIZACIÓN (dueño)
   - Mascota: especie, raza, tamaño, tipo de pelo, temperamento.
   - Vehículo: patente, tipo (city car, SUV, camioneta).
   - Festejado: nombre, edad, cantidad de niños.
-  - Paciente: solo datos de agenda (ver sección 15).
+  - Paciente: solo datos de agenda (ver sección 21).
 - Los atributos del sujeto alimentan el motor de reglas.
 
 ### 7.5 Plantillas por rubro
@@ -357,8 +409,9 @@ ACUERDO (Negocio A ↔ Negocio B) — bidireccional
 
 ## 17. Planes y derechos (`plan` / `entitlement`)
 
-- **Plan Base:** agenda, 1 sucursal, límite de recursos.
-- **Add-ons:** reglas de cálculo, recursos extra, landing, comisiones, acuerdos entre negocios, vendedores, recordatorios por WhatsApp.
+- **Plan Base:** agenda, 1 sucursal, límite de recursos, notificaciones por email.
+- **Add-ons:** reglas de cálculo, recursos extra, landing, comisiones, acuerdos entre negocios, vendedores, **paquetes de mensajes de WhatsApp**.
+- **WhatsApp con cuota:** cada negocio tiene un saldo de mensajes de WhatsApp (incluido en su add-on o comprado por paquetes). Todo envío por WhatsApp (escalamiento, recordatorios, códigos de verificación) descuenta de ese saldo. Sin saldo, la app usa solo email y avisa al negocio. El consumo se registra por negocio y por tipo de mensaje.
 - **Fee por sucursal adicional.**
 - **Plan Revendedor** (fase 4).
 - Cada negocio tiene su propia suscripción.
@@ -369,11 +422,32 @@ Implementación: tabla de derechos por negocio (función habilitada + límites).
 
 ## 18. Notificaciones
 
-- Confirmación de reserva por email con archivo **`.ics`** y mensaje de WhatsApp.
-- Recordatorios automáticos (por defecto 24 h y 2 h antes) con botón confirmar/cancelar.
-- Avisos al staff, al dueño del recurso compartido y al vendedor.
+### 18.1 Estrategia por defecto: escalamiento email → WhatsApp
+
+Se parte por el canal barato (email) y solo se escala a WhatsApp con los clientes que no confirman.
+
+1. **Al reservar:** email de confirmación con archivo **`.ics`**.
+2. **24 h antes:** email recordatorio con botones **"Confirmo asistencia"** y **"Cancelar o cambiar"**.
+3. **Si no confirmó antes de la hora de corte** (por defecto 4 h antes de la cita): **un** WhatsApp con los mismos botones.
+4. **Si tampoco confirma:** la reserva queda en estado de confirmación **"sin confirmar"**, destacada en el panel de recepción para que el local decida si llamar.
+
+### 18.2 Reglas
+
+- La confirmación se mide **solo por el clic en el botón**, nunca por la apertura del email (no es confiable).
+- **Clientes sin email** (creados en recepción solo con teléfono): pasan directo al paso de WhatsApp.
+- **Configurable por negocio:** activar o desactivar el escalamiento y la hora de corte.
+- Los botones de WhatsApp abren una **página de la app** (link firmado de un solo uso por reserva); no se pide al cliente responder por chat, porque desde octubre de 2026 las respuestas del negocio dentro de la conversación también se cobran.
+- Cada WhatsApp descuenta del saldo de mensajes del negocio (sección 17). Sin saldo, el flujo se queda en email.
+- Si el cliente cancela, el horario se libera (y, cuando exista, se avisa a la lista de espera).
+- Registrar cada envío (canal, tipo, estado de entrega, clic) para medir en el piloto **qué porcentaje confirma por email**.
+
+### 18.3 Otras notificaciones
+
+- Avisos al staff, al dueño del recurso compartido y al vendedor (por email o dentro de la app; push cuando exista la app móvil).
 - Todas las comunicaciones al cliente usan la **marca visible** de la reserva.
-- Plantillas editables por negocio. Los mensajes de WhatsApp tienen costo: controlar su uso por plan.
+- Plantillas editables por negocio.
+- Dominio de envío de emails configurado con **SPF, DKIM y DMARC** para no caer en spam.
+- Envío de email y de WhatsApp siempre a través de interfaces propias (sección 3.1).
 
 ---
 
@@ -398,6 +472,12 @@ Implementación: tabla de derechos por negocio (función habilitada + límites).
 ## 21. Seguridad, privacidad y cumplimiento
 
 - **RLS en todas las tablas** con datos de negocio. Tests que verifiquen que un negocio no puede leer datos de otro.
+- **Ninguna tabla se crea sin RLS habilitado**, aunque sea temporal o "de prueba". Las filtraciones más comunes en apps con Supabase vienen de tablas con RLS desactivado o políticas demasiado abiertas.
+- La clave `service_role` de Supabase **solo** se usa en el servidor; nunca en el navegador, la app móvil ni el repositorio. En el cliente solo va la clave pública.
+- Los buckets de archivos son **privados por defecto**; los archivos se entregan con URL firmadas, salvo contenido público explícito (ej. imágenes de la landing).
+- Antes de cada publicación a producción, revisar el **Security Advisor** de Supabase y corregir las alertas.
+- Verificación en dos pasos obligatoria en las cuentas de Vercel, Supabase y GitHub.
+- Revisar los informes de seguridad de los proveedores (SOC 2 de Vercel y Supabase) cuando un cliente grande los solicite.
 - **Consultas médicas:** la app solo guarda datos de agenda (nombre, contacto, motivo general). **No guardar fichas clínicas** (Ley 20.584 y ley de protección de datos personales). Revisar con asesoría legal antes de ampliar.
 - Mínimo de datos personales necesarios; los datos del cliente se comparten con un socio solo en modalidad servicio completo.
 - **Registro de auditoría** (`audit_log`): quién creó, modificó, anuló o cambió de estado reservas, precios, comisiones, acuerdos y liquidaciones, con fecha y valores antes/después.
@@ -447,8 +527,9 @@ Antes de programar la fase 3, documentar con los hermanos su proceso actual paso
 ## 25. Decisiones pendientes
 
 - Nombre de la app (revisar dominio en NIC Chile y marca en INAPI).
-- Precios de planes, add-ons y fee por sucursal.
-- Proveedor de WhatsApp y costo por mensaje.
+- Precios de planes, add-ons, fee por sucursal y **paquetes de WhatsApp** (considerar los costos de la sección 3.2).
+- Proveedor de WhatsApp (Twilio u otro) y su comisión por mensaje, adicional a la tarifa de Meta.
+- Porcentaje real de clientes que confirman por email (se mide en el piloto de peluquería) y hora de corte por defecto.
 - Pasarela de pago.
 - Valores por defecto de cancelación y daños entre socios.
 - Integración de boleta electrónica.
