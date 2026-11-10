@@ -4,7 +4,7 @@ import type { Tables } from '../database.types';
 import { assertOk, expectRows, unwrap } from '../errors';
 
 export type Resource = Tables<'resources'> & {
-  professional: Pick<Tables<'professionals'>, 'id' | 'display_name' | 'email' | 'phone'> | null;
+  professional: Pick<Tables<'professionals'>, 'id' | 'display_name' | 'email' | 'phone' | 'user_id'> | null;
   resource_hours: Tables<'resource_hours'>[];
 };
 
@@ -12,7 +12,7 @@ export async function listResources(db: DbClient, businessId: string): Promise<R
   return unwrap(
     await db
       .from('resources')
-      .select('*, professional:professionals(id, display_name, email, phone), resource_hours(*)')
+      .select('*, professional:professionals(id, display_name, email, phone, user_id), resource_hours(*)')
       .eq('business_id', businessId)
       .order('type')
       .order('name')
