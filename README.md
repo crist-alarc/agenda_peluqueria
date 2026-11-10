@@ -33,8 +33,8 @@ Aplicación web en **TypeScript** (React + Vite) para agendar horas en peluquer�
 
 ### 2. Configurar la app
 ```bash
-cp .env.example .env.local
-# Completa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (Project Settings → API)
+# El repositorio ya trae .env apuntando al proyecto Supabase de producción.
+# Para usar otro proyecto: cp .env.example .env.local y completa los valores.
 npm install
 npm run dev
 ```
@@ -59,7 +59,19 @@ Abre http://localhost:5173.
 | `npm run typecheck` | Sólo comprobación de tipos |
 | `npm test` | Tests unitarios (Vitest) |
 
-Al desplegar como SPA (Vercel, Netlify, etc.) configura la reescritura de todas las rutas a `index.html`.
+## Publicación en GitHub Pages
+
+La app se publica automáticamente en **https://crist-alarc.github.io/agenda_peluqueria/** con el workflow
+`.github/workflows/deploy.yml` en cada push a `main` (o a mano desde la pestaña *Actions*).
+
+Configuración necesaria (una sola vez):
+1. **GitHub** → *Settings → Pages → Build and deployment → Source*: **GitHub Actions**.
+2. **Supabase** → *Authentication → URL Configuration*:
+   - *Site URL*: `https://crist-alarc.github.io/agenda_peluqueria/`
+   - *Redirect URLs*: añade `https://crist-alarc.github.io/agenda_peluqueria/**` y `http://localhost:5173/**`
+
+La conexión a Supabase está en `.env` (URL y clave *publishable*, que son públicas por diseño;
+la seguridad la dan las políticas RLS). Para apuntar a otro proyecto en local, usa `.env.local`.
 
 ## Estructura
 ```

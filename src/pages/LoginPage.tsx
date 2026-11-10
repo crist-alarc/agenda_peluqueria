@@ -25,7 +25,11 @@ export default function LoginPage() {
     const { data, error } =
       mode === 'login'
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href },
+          });
     setLoading(false);
     if (error) return setError(errorMessage(error));
     if (mode === 'signup' && !data.session) {
