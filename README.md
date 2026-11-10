@@ -1,99 +1,65 @@
-# Agenda Peluquería ✂️
+# Agenda (nombre provisorio)
 
-Aplicación web en **TypeScript** (React + Vite) para agendar horas en peluquerías y barberías, con **Supabase** como base de datos y autenticación.
+Plataforma SaaS para que pequeños negocios de servicios en Chile gestionen su agenda: peluquerías,
+barberías, canchas, inflables, veterinarias y más. **Fuente de verdad del proyecto:
+[`docs/DIRECTRICES.md`](docs/DIRECTRICES.md).** Decisiones de arquitectura en [`docs/adr/`](docs/adr).
 
-## Funcionalidades
+**Fase actual:** 1 · Fundaciones — cuentas y roles, organización → negocio → sucursal, recursos,
+servicios, adicionales con stock, planes y derechos, auditoría y RLS.
 
-**Página pública de reservas** (`/`), sin necesidad de cuenta:
-1. El cliente elige el servicio (corte, barba, tinte…), con duración y precio.
-2. Elige profesional o "Cualquiera".
-3. Elige día y una hora libre (calculada en el servidor según horario, citas y bloqueos).
-4. Deja nombre, teléfono, email y comentarios → reserva confirmada.
+## Estructura (monorepo pnpm)
 
-**Panel de administración** (`/admin`), con login de Supabase Auth:
-- **Agenda** diaria con filtro por profesional, estados (confirmada, completada, no asistió, cancelada), resumen de facturación y actualización en tiempo real cuando entra una reserva.
-- **Servicios**: crear, editar, activar/desactivar y eliminar.
-- **Profesionales**: datos, servicios que realiza, horario semanal por tramos (ej. 10–14 y 15–19) y bloqueos/ausencias (vacaciones, almuerzo…).
-- **Ajustes**: nombre, teléfono, dirección, zona horaria, moneda, intervalo entre horas y días de anticipación para reservar.
+```
+apps/web          Next.js (App Router): panel, login, PWA
+packages/core     Lógica de dominio pura: permisos, límites del plan, montos CLP, horarios, validación (Zod)
+packages/db       Capa de acceso a datos (repositorios), tipos generados y migraciones SQL de Supabase
+packages/auth     Módulo propio de autenticación (envuelve Supabase Auth)
+packages/ui       Componentes de interfaz (estilo shadcn/ui + Tailwind)
+docs              Directrices y ADR
+```
 
-### Seguridad e integridad
-- **Row Level Security** en todas las tablas: el público sólo lee el catálogo; las citas sólo las ven los administradores.
-- Los clientes reservan a través de la función `book_appointment()`, que valida que el horario siga disponible.
-- Una **restricción de exclusión** (`btree_gist`) impide en la base de datos que un profesional tenga dos citas solapadas, incluso con reservas simultáneas.
-- Los horarios se calculan en la **zona horaria del negocio**, sin depender de la del navegador.
+## Desarrollo
 
-## Puesta en marcha
+Requisitos: Node 22, pnpm 10, Docker (para Supabase local).
 
-### 1. Crear el proyecto en Supabase
-1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. En **SQL Editor**, ejecuta el contenido de `supabase/migrations/20261107000000_init.sql`.
-3. (Opcional) Ejecuta `supabase/seed.sql` para cargar servicios, profesionales y horarios de ejemplo.
-
-> Con la [CLI de Supabase](https://supabase.com/docs/guides/cli) también puedes usar `supabase link` y `supabase db push`.
-
-### 2. Configurar la app
 ```bash
-# El repositorio ya trae .env apuntando al proyecto Supabase de producción.
-# Para usar otro proyecto: cp .env.example .env.local y completa los valores.
-npm install
-npm run dev
+pnpm install
+
+# Supabase local (base, Auth, API y Mailpit para ver los emails en http://localhost:54324)
+npx supabase start --workdir packages/db
+npx supabase status --workdir packages/db -o env   # copia API_URL y ANON_KEY
+
+# apps/web/.env.local
+#   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<ANON_KEY>
+#   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+pnpm dev        # http://localhost:3000
 ```
-Abre http://localhost:5173.
 
-### 3. Crear el primer administrador
-1. Entra en `/login` y regístrate (o crea el usuario en **Authentication → Users**).
-2. En el SQL Editor de Supabase, dale permisos de administrador:
-   ```sql
-   insert into public.admins (user_id)
-   select id from auth.users where email = 'tu-email@ejemplo.com';
-   ```
-3. Recarga `/admin`.
+## Pruebas
 
-> Recomendado: una vez creados los administradores, desactiva el registro público en **Authentication → Sign In / Providers → Allow new users to sign up**. Aunque alguien se registre, no tendrá acceso al panel si no está en la tabla `admins`.
-
-## Scripts
-| Comando | Descripción |
+| Comando | Qué prueba |
 |---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Typecheck + build de producción en `dist/` |
-| `npm run typecheck` | Sólo comprobación de tipos |
-| `npm test` | Tests unitarios (Vitest) |
+| `pnpm typecheck` | Tipos en todos los paquetes |
+| `pnpm test` | Lógica de dominio (`packages/core`) |
+| `pnpm test:db` | Seguridad de la base: aislamiento entre negocios, roles, límites, auditoría. Necesita un PostgreSQL en `TEST_DATABASE_URL` (por defecto `postgres://postgres:postgres@localhost:5432/postgres`) |
+| `pnpm --filter @agenda/web e2e` | Flujos críticos con Playwright (app corriendo + Supabase local) |
 
-## Publicación en GitHub Pages
+GitHub Actions ejecuta los tres niveles en cada PR (`.github/workflows/ci.yml`).
 
-La app se publica automáticamente en **https://crist-alarc.github.io/agenda_peluqueria/** con el workflow
-`.github/workflows/deploy.yml` en cada push a `main` (o a mano desde la pestaña *Actions*).
+## Base de datos
 
-Configuración necesaria (una sola vez):
-1. **GitHub** → *Settings → Pages → Build and deployment → Source*: **GitHub Actions**.
-2. **Supabase** → *Authentication → URL Configuration*:
-   - *Site URL*: `https://crist-alarc.github.io/agenda_peluqueria/`
-   - *Redirect URLs*: añade `https://crist-alarc.github.io/agenda_peluqueria/**` y `http://localhost:5173/**`
+- Los cambios se hacen **solo con migraciones** en `packages/db/supabase/migrations/`.
+- Después de cada migración, regenerar `packages/db/src/database.types.ts`.
+- Antes de publicar, revisar el Security Advisor de Supabase.
 
-La conexión a Supabase está en `.env` (URL y clave *publishable*, que son públicas por diseño;
-la seguridad la dan las políticas RLS). Para apuntar a otro proyecto en local, usa `.env.local`.
+## Despliegue (Vercel)
 
-## Estructura
-```
-supabase/
-  migrations/…_init.sql   Tablas, RLS y funciones (get_available_slots, book_appointment, get_agenda)
-  seed.sql                Datos de ejemplo
-src/
-  lib/                    Cliente Supabase, contexto (ajustes + sesión), fechas y formato
-  types/database.ts       Tipos de la base de datos
-  pages/BookingPage.tsx   Reserva pública
-  pages/LoginPage.tsx     Acceso del personal
-  pages/admin/            Agenda, Servicios, Profesionales, Ajustes
-```
+1. Vercel → proyecto → *Settings → Build and Deployment → Root Directory*: `apps/web`.
+2. La URL y la clave pública de Supabase vienen en `apps/web/.env.production` (no son secretas).
+3. Supabase → *Authentication → URL Configuration*: agregar la URL de Vercel en *Site URL* y
+   `https://<tu-app>.vercel.app/**` en *Redirect URLs*.
 
-## Modelo de datos
-| Tabla | Contenido |
-|---|---|
-| `business_settings` | Configuración del negocio (una fila) |
-| `services` | Servicios con duración y precio |
-| `staff` | Profesionales |
-| `staff_services` | Qué servicios hace cada profesional |
-| `working_hours` | Horario semanal por tramos |
-| `time_off` | Bloqueos y ausencias |
-| `appointments` | Citas |
-| `admins` | Usuarios con acceso al panel |
+La app usa Next.js estándar (sin servicios exclusivos de Vercel), así que también puede correr en Docker
+con `NEXT_OUTPUT=standalone`.
