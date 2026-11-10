@@ -60,7 +60,8 @@ jobs:
           cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Versión fija: "latest" consulta la API de GitHub y puede fallar por límite de peticiones
+          version: 3.1.0
       - name: Iniciar Supabase local (aplica las migraciones)
         run: supabase start --workdir packages/db -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
       - name: Variables de la app
