@@ -2,7 +2,8 @@
 -- Agenda para peluquerías y barberías — esquema inicial
 -- =============================================================
 
-create extension if not exists btree_gist;
+create schema if not exists extensions;
+create extension if not exists btree_gist with schema extensions;
 
 -- -------------------------------------------------------------
 -- Configuración del negocio (una sola fila)
