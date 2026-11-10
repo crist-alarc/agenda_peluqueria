@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useApp } from '../lib/AppContext';
 import { supabase } from '../lib/supabase';
 
@@ -30,9 +30,9 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="topbar-right">
-          <a href="/" target="_blank" rel="noreferrer">
+          <Link to="/" target="_blank" rel="noreferrer">
             Ver página de reservas
-          </a>
+          </Link>
           <span className="muted small">{session?.user.email}</span>
           <button className="btn ghost small" onClick={() => void logout()}>
             Salir
