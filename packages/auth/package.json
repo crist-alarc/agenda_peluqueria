@@ -1,0 +1,19 @@
+{
+  "name": "@agenda/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agenda/core": "workspace:*",
+    "@agenda/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5"
+  }
+}
