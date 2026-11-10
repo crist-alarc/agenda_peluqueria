@@ -8,6 +8,8 @@ import { t } from '@/lib/texts';
 import { signOutAction } from '../../(auth)/actions';
 
 const NAV: Array<{ href: string; label: string; permission: Permission }> = [
+  { href: '/agenda', label: 'Agenda', permission: 'bookings.view' },
+  { href: '/clientes', label: 'Clientes', permission: 'customers.view' },
   { href: '', label: 'Resumen', permission: 'catalog.view' },
   { href: '/sucursales', label: 'Sucursales', permission: 'catalog.view' },
   { href: '/recursos', label: 'Recursos', permission: 'catalog.view' },
