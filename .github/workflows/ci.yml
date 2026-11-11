@@ -78,7 +78,9 @@ jobs:
           echo "CRON_SECRET=e2e-cron-secret" >> "$GITHUB_ENV"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm --filter @agenda/web exec playwright install --with-deps chromium
+      # Sin --with-deps: el runner ya trae las librerías de Chrome, y la descarga de
+      # paquetes de Ubuntu (fuentes opcionales) falló varias veces por la red de GitHub.
+      - run: pnpm --filter @agenda/web exec playwright install chromium
       - name: Tests de punta a punta
         run: |
           pnpm --filter @agenda/web start -p 3000 &

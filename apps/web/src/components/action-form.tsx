@@ -18,6 +18,7 @@ export function ActionForm({
   className,
   resetOnSuccess = false,
   confirm,
+  'aria-label': ariaLabel,
 }: {
   action: Action;
   children: ReactNode;
@@ -25,6 +26,7 @@ export function ActionForm({
   resetOnSuccess?: boolean;
   /** Si se indica, pide confirmación antes de enviar. */
   confirm?: string;
+  'aria-label'?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const ref = useRef<HTMLFormElement>(null);
@@ -38,6 +40,7 @@ export function ActionForm({
       ref={ref}
       action={formAction}
       className={className}
+      aria-label={ariaLabel}
       aria-busy={pending}
       onSubmit={(e) => {
         // Se envía manualmente para que React no vacíe los campos cuando el

@@ -14,9 +14,10 @@ cualquier otra documentación del repositorio. Resumen de las reglas de trabajo 
 
 Monorepo pnpm según las directrices (ver `README.md`).
 - **Fase 1 · Fundaciones:** cerrada (aprobada por el dueño). Decisiones: `docs/adr/0001-fase-1-fundaciones.md`.
-- **Fase 2 · MVP peluquería:** en curso, en entregas 2A–2D. 2A, 2B y 2C implementadas; sigue 2D.
-  Decisiones: `docs/adr/0002-fase-2a-reservas.md`, `docs/adr/0003-fase-2b-confirmacion-portal.md`,
-  `docs/adr/0004-fase-2c-emails-recordatorios.md`.
+- **Fase 2 · MVP peluquería:** programada completa (2A–2D); el piloto con una peluquería real queda para más adelante.
+  Decisiones: ADR 0002 (reservas), 0003 (confirmación y portal), 0004 (emails y recordatorios), 0005 (comisiones).
+- **Fase 3 · MVP inflables:** siguiente. Antes de programar, documentar el proceso de los hermanos
+  (`docs/ESTADO.md`, sección 7: guion, alcance, entregas propuestas y preguntas abiertas).
 - **Regla del dueño:** todo tiempo que afecte a usuarios es configurable por negocio (ADR 0004).
 
 Comandos de verificación antes de cada push: `pnpm typecheck`, `pnpm test`, `pnpm test:db`

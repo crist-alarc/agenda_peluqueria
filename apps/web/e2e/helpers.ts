@@ -71,3 +71,19 @@ export async function emailTo(to: string, subject: string): Promise<MailpitMessa
   }
   throw new Error(`No llegó el email "${subject}" a ${to}`);
 }
+
+/**
+ * Activa una función del plan para un negocio de prueba (los negocios nuevos
+ * parten en el Plan Base). Usa la clave de servicio, como haría soporte.
+ */
+export async function enableFeature(businessId: string, feature: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SECRET_KEY para las pruebas');
+  const res = await fetch(`${url}/rest/v1/business_entitlements?business_id=eq.${businessId}&feature=eq.${feature}`, {
+    method: 'PATCH',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ enabled: true, source: 'manual' }),
+  });
+  if (!res.ok) throw new Error(`No se pudo activar ${feature}: ${res.status} ${await res.text()}`);
+}

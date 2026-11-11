@@ -15,6 +15,7 @@ import { z } from 'zod';
 import type { BookingInput, SlotQueryInput, WizardCustomer } from '@/components/booking-wizard';
 import { fail as failState, ok, toActionError, type ActionState } from '@/lib/actions';
 import { availableSlots, bookSlot } from '@/lib/booking';
+import { tryGenerateBookingCommissions } from '@/lib/commissions';
 import { formatDateTime } from '@/lib/dates';
 import { sendBookingEmail } from '@/lib/notify';
 import { requireBusiness } from '@/lib/session';
@@ -92,6 +93,8 @@ export async function setStatusAction(_: ActionState, form: FormData): Promise<A
     if (!canTransition(from, to)) return failState(t.errors.invalid);
     const reason = typeof form.get('reason') === 'string' ? String(form.get('reason')).trim() || null : null;
     await setBookingStatus(db, bookingId, to, reason);
+    // Cada reserva completada genera las comisiones del equipo (sección 16)
+    if (to === 'completed') await tryGenerateBookingCommissions(bookingId);
     revalidatePath(`/panel/${businessId}/agenda`);
     return ok(t.bookingStatusDone[to] ?? t.saved);
   } catch (error) {

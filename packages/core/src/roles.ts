@@ -28,20 +28,24 @@ export type Permission =
   | 'bookings.view'
   /** Crear reservas y cambiar su estado (recepción). */
   | 'bookings.manage'
-  | 'customers.view';
+  | 'customers.view'
+  /** Reglas, repartos, ajustes y liquidaciones del equipo. */
+  | 'commissions.manage'
+  /** Ver comisiones (cada profesional solo las suyas; lo filtra la base). */
+  | 'commissions.view';
 
 const MATRIX: Record<Role, readonly Permission[]> = {
   owner: [
     'business.update', 'catalog.view', 'catalog.manage', 'branches.create', 'team.manage', 'audit.view', 'plan.view',
-    'bookings.view', 'bookings.manage', 'customers.view',
+    'bookings.view', 'bookings.manage', 'customers.view', 'commissions.manage', 'commissions.view',
   ],
   admin: [
     'business.update', 'catalog.view', 'catalog.manage', 'branches.create', 'team.manage', 'audit.view', 'plan.view',
-    'bookings.view', 'bookings.manage', 'customers.view',
+    'bookings.view', 'bookings.manage', 'customers.view', 'commissions.manage', 'commissions.view',
   ],
-  branch_admin: ['catalog.view', 'plan.view', 'bookings.view', 'bookings.manage', 'customers.view'],
-  receptionist: ['catalog.view', 'bookings.view', 'bookings.manage', 'customers.view'],
-  staff: ['catalog.view', 'bookings.view'],
+  branch_admin: ['catalog.view', 'plan.view', 'bookings.view', 'bookings.manage', 'customers.view', 'commissions.view'],
+  receptionist: ['catalog.view', 'bookings.view', 'bookings.manage', 'customers.view', 'commissions.view'],
+  staff: ['catalog.view', 'bookings.view', 'commissions.view'],
   seller: ['catalog.view'],
 };
 

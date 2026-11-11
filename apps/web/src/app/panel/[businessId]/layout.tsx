@@ -16,6 +16,7 @@ const NAV: Array<{ href: string; label: string; permission: Permission }> = [
   { href: '/servicios', label: 'Servicios', permission: 'catalog.view' },
   { href: '/adicionales', label: 'Adicionales', permission: 'catalog.view' },
   { href: '/equipo', label: 'Equipo', permission: 'catalog.view' },
+  { href: '/comisiones', label: 'Comisiones', permission: 'commissions.view' },
   { href: '/plan', label: 'Plan', permission: 'plan.view' },
   { href: '/configuracion', label: 'Configuración', permission: 'business.update' },
 ];

@@ -7,3 +7,4 @@ export * from './availability';
 export * from './bookings';
 export * from './booking-context';
 export * from './reminders';
+export * from './commissions';
