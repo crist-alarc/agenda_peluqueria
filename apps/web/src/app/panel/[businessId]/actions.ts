@@ -12,6 +12,7 @@ import {
   blockSchema,
   bookingSettingsSchema,
   confirmationSettingsSchema,
+  reminderSettingsSchema,
   branchSchema,
   can,
   canAssignRole,
@@ -332,6 +333,22 @@ export async function updateConfirmationSettingsAction(_: ActionState, form: For
       pending_hold_minutes: input.pendingHoldMinutes,
     });
     revalidatePath(`/panel/${business.id}/configuracion`);
+    return ok(t.saved);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function updateReminderSettingsAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const { db, business } = await contextFor(form, 'business.update');
+    const input = reminderSettingsSchema.parse(formToObject(form));
+    await repo.updateReminderSettings(db, business.id, {
+      reminder_enabled: input.reminderEnabled,
+      reminder_hours_before: input.reminderHoursBefore,
+      confirmation_cutoff_hours: input.confirmationCutoffHours,
+    });
+    revalidatePath(`/panel/${business.id}`, 'layout');
     return ok(t.saved);
   } catch (error) {
     return toActionError(error);

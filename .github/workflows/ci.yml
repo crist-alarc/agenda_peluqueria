@@ -74,6 +74,8 @@ jobs:
           echo "SUPABASE_SECRET_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000" >> "$GITHUB_ENV"
           echo "MAILPIT_URL=http://127.0.0.1:54324" >> "$GITHUB_ENV"
+          # Clave de prueba de la tarea programada (no es la de producción)
+          echo "CRON_SECRET=e2e-cron-secret" >> "$GITHUB_ENV"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm --filter @agenda/web exec playwright install --with-deps chromium

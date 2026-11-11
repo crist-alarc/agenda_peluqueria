@@ -5,7 +5,8 @@ barberías, canchas, inflables, veterinarias y más. **Fuente de verdad del proy
 [`docs/DIRECTRICES.md`](docs/DIRECTRICES.md).** Decisiones de arquitectura en [`docs/adr/`](docs/adr).
 
 **Fase actual:** 2 · MVP peluquería. Hecho: Fase 1, 2A (reservas, link público `/r/<negocio>`, agenda) y
-2B (confirmación con botón por email, portal `/mis-reservas`). Estado y pendientes: [`docs/ESTADO.md`](docs/ESTADO.md).
+2B (confirmación con botón por email, portal `/mis-reservas`) y 2C (email con `.ics`, recordatorios
+configurables, "Sin confirmar" en la agenda). Estado y pendientes: [`docs/ESTADO.md`](docs/ESTADO.md).
 
 ## Estructura (monorepo pnpm)
 
@@ -35,6 +36,7 @@ npx supabase status --workdir packages/db -o env   # copia API_URL y ANON_KEY
 #   NEXT_PUBLIC_SITE_URL=http://localhost:3000
 #   SUPABASE_SECRET_KEY=<SERVICE_ROLE_KEY>   (solo servidor: crea reservas del link público)
 #   MAILPIT_URL=http://127.0.0.1:54324        (emails de desarrollo; en producción RESEND_API_KEY + EMAIL_FROM)
+#   CRON_SECRET=<cualquier clave local>        (protege /api/tareas/recordatorios)
 
 pnpm dev        # http://localhost:3000
 ```
@@ -63,7 +65,10 @@ GitHub Actions ejecuta los tres niveles en cada PR (`.github/workflows/ci.yml`).
    **Secreto obligatorio** (Vercel → *Settings → Environment Variables*, solo servidor):
    `SUPABASE_SECRET_KEY` = clave *secret* de Supabase (*Project Settings → API Keys*). La usa el link
    público para crear reservas después de validar el horario. Nunca va en el repositorio.
-3. Supabase → *Authentication → URL Configuration*: agregar la URL de Vercel en *Site URL* y
+3. **Recordatorios:** `CRON_SECRET` (clave larga al azar) en Vercel y en Supabase → *Edge Functions →
+   Secrets*, junto con `APP_URL` (URL de la app). Supabase Cron llama cada 15 min a la función
+   `recordatorios`, que avisa a la app (ADR 0004).
+4. Supabase → *Authentication → URL Configuration*: agregar la URL de Vercel en *Site URL* y
    `https://<tu-app>.vercel.app/**` en *Redirect URLs*.
 
 La app usa Next.js estándar (sin servicios exclusivos de Vercel), así que también puede correr en Docker

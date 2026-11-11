@@ -1,4 +1,16 @@
-import { addDays, can, dayRange, formatClp, isIsoDate, localDate, localTime, nextStatuses } from '@agenda/core';
+import {
+  addDays,
+  attendanceState,
+  can,
+  dayRange,
+  formatClp,
+  isIsoDate,
+  localDate,
+  localTime,
+  nextStatuses,
+  type AttendanceState,
+  type ReminderSettings,
+} from '@agenda/core';
 import { listAddons, listAgenda, listBranches, listResources, listServices, type AgendaBooking } from '@agenda/db';
 import { Badge, Button, Card, CardContent, EmptyState, Input, PageHeader, Select } from '@agenda/ui';
 import Link from 'next/link';
@@ -7,7 +19,7 @@ import { BookingWizard } from '@/components/booking-wizard';
 import { formatLongDate, wizardDates } from '@/lib/dates';
 import { requirePermission } from '@/lib/session';
 import { t } from '@/lib/texts';
-import { bookReception, getReceptionSlots, searchCustomersAction, setStatusAction } from './actions';
+import { bookReception, getReceptionSlots, searchCustomersAction, setAttendanceAction, setStatusAction } from './actions';
 
 export const metadata = { title: 'Agenda' };
 
@@ -39,6 +51,22 @@ export default async function AgendaPage({
   const people = branchResources.filter((r) => r.type === 'person');
   const manage = can(membership, 'bookings.manage');
   const base = `/panel/${business.id}/agenda`;
+  const now = new Date().toISOString();
+  const reminders: ReminderSettings = {
+    reminderEnabled: business.reminder_enabled,
+    reminderHoursBefore: business.reminder_hours_before,
+    confirmationCutoffHours: business.confirmation_cutoff_hours,
+  };
+  const attendanceOf = (b: AgendaBooking) =>
+    attendanceState(
+      { status: b.status, startsAt: b.starts_at, reminderSentAt: b.reminder_sent_at, attendanceConfirmedAt: b.attendance_confirmed_at },
+      reminders,
+      now,
+    );
+  const card = (b: AgendaBooking) => (
+    <BookingCard key={b.id} booking={b} tz={tz} businessId={business.id} manage={manage} attendance={attendanceOf(b)} />
+  );
+  const unconfirmed = dayBookings.filter((b) => attendanceOf(b) === 'unconfirmed').length;
   const qs = (d: string, extra = '') => `${base}?fecha=${d}&sucursal=${branch.id}${extra}`;
 
   // Columnas: cada persona (o recurso) con sus reservas del día
@@ -85,7 +113,9 @@ export default async function AgendaPage({
     <>
       <PageHeader
         title="Agenda"
-        description={`${formatLongDate(date)} · ${active.length} ${active.length === 1 ? 'reserva' : 'reservas'}`}
+        description={`${formatLongDate(date)} · ${active.length} ${active.length === 1 ? 'reserva' : 'reservas'}${
+          unconfirmed > 0 ? ` · ${unconfirmed} sin confirmar` : ''
+        }`}
         actions={
           manage && (
             <Button asChild>
@@ -137,9 +167,7 @@ export default async function AgendaPage({
               <h2 className="mb-2 text-sm font-semibold">{resource.name}</h2>
               <div className="space-y-2">
                 {list.length === 0 && <p className="text-sm text-muted-foreground">Sin reservas</p>}
-                {list.map((b) => (
-                  <BookingCard key={b.id} booking={b} tz={tz} businessId={business.id} manage={manage} />
-                ))}
+                {list.map(card)}
               </div>
             </section>
           ))}
@@ -147,9 +175,7 @@ export default async function AgendaPage({
             <section aria-label="Otras reservas">
               <h2 className="mb-2 text-sm font-semibold">Otros recursos</h2>
               <div className="space-y-2">
-                {unassigned.map((b) => (
-                  <BookingCard key={b.id} booking={b} tz={tz} businessId={business.id} manage={manage} />
-                ))}
+                {unassigned.map(card)}
               </div>
             </section>
           )}
@@ -169,7 +195,25 @@ const STATUS_VARIANT = {
   no_show: 'muted',
 } as const;
 
-function BookingCard({ booking: b, tz, businessId, manage }: { booking: AgendaBooking; tz: string; businessId: string; manage: boolean }) {
+const ATTENDANCE = {
+  confirmed: { label: 'Asistencia confirmada', variant: 'success' },
+  waiting: { label: 'Esperando confirmación', variant: 'outline' },
+  unconfirmed: { label: 'Sin confirmar', variant: 'warning' },
+} as const;
+
+function BookingCard({
+  booking: b,
+  tz,
+  businessId,
+  manage,
+  attendance,
+}: {
+  booking: AgendaBooking;
+  tz: string;
+  businessId: string;
+  manage: boolean;
+  attendance: AttendanceState | null;
+}) {
   const inactive = b.status === 'cancelled' || b.status === 'no_show';
   return (
     <Card
@@ -184,6 +228,21 @@ function BookingCard({ booking: b, tz, businessId, manage }: { booking: AgendaBo
           </span>
           <Badge variant={STATUS_VARIANT[b.status]}>{t.bookingStatuses[b.status]}</Badge>
         </div>
+        {attendance && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={ATTENDANCE[attendance].variant}>{ATTENDANCE[attendance].label}</Badge>
+            {manage && attendance !== 'confirmed' && (
+              <ActionForm action={setAttendanceAction}>
+                <input type="hidden" name="businessId" value={businessId} />
+                <input type="hidden" name="bookingId" value={b.id} />
+                <input type="hidden" name="confirmed" value="true" />
+                <SubmitButton size="xs" variant="ghost">
+                  Marcar confirmada
+                </SubmitButton>
+              </ActionForm>
+            )}
+          </div>
+        )}
         <div>
           <p className="font-medium">{b.customer?.full_name}</p>
           {b.customer?.phone && (

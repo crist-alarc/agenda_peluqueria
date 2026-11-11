@@ -416,6 +416,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          notification_id: string | null
           purpose: string
           token_hash: string
           used_at: string | null
@@ -425,6 +426,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          notification_id?: string | null
           purpose: string
           token_hash: string
           used_at?: string | null
@@ -434,6 +436,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          notification_id?: string | null
           purpose?: string
           token_hash?: string
           used_at?: string | null
@@ -446,10 +449,18 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_tokens_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_log"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bookings: {
         Row: {
+          attendance_confirmed_at: string | null
           branch_id: string
           business_id: string
           cancel_reason: string | null
@@ -463,6 +474,7 @@ export type Database = {
           hold_expires_at: string | null
           id: string
           notes: string | null
+          reminder_sent_at: string | null
           sold_by_user_id: string | null
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -471,6 +483,7 @@ export type Database = {
           visible_brand_business_id: string
         }
         Insert: {
+          attendance_confirmed_at?: string | null
           branch_id: string
           business_id: string
           cancel_reason?: string | null
@@ -484,6 +497,7 @@ export type Database = {
           hold_expires_at?: string | null
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           sold_by_user_id?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -492,6 +506,7 @@ export type Database = {
           visible_brand_business_id: string
         }
         Update: {
+          attendance_confirmed_at?: string | null
           branch_id?: string
           business_id?: string
           cancel_reason?: string | null
@@ -505,6 +520,7 @@ export type Database = {
           hold_expires_at?: string | null
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           sold_by_user_id?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -702,6 +718,7 @@ export type Database = {
         Row: {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours: number
+          confirmation_cutoff_hours: number
           created_at: string
           email: string | null
           id: string
@@ -710,10 +727,12 @@ export type Database = {
           min_advance_minutes: number
           name: string
           organization_id: string
-          phone: string | null
           pending_hold_minutes: number
+          phone: string | null
           public_booking_enabled: boolean
           public_confirmation_mode: string
+          reminder_enabled: boolean
+          reminder_hours_before: number
           slot_interval_minutes: number
           slug: string
           timezone: string
@@ -721,6 +740,7 @@ export type Database = {
         Insert: {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
+          confirmation_cutoff_hours?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -729,10 +749,12 @@ export type Database = {
           min_advance_minutes?: number
           name: string
           organization_id: string
-          phone?: string | null
           pending_hold_minutes?: number
+          phone?: string | null
           public_booking_enabled?: boolean
           public_confirmation_mode?: string
+          reminder_enabled?: boolean
+          reminder_hours_before?: number
           slot_interval_minutes?: number
           slug: string
           timezone?: string
@@ -740,6 +762,7 @@ export type Database = {
         Update: {
           booking_mode?: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
+          confirmation_cutoff_hours?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -748,10 +771,12 @@ export type Database = {
           min_advance_minutes?: number
           name?: string
           organization_id?: string
-          phone?: string | null
           pending_hold_minutes?: number
+          phone?: string | null
           public_booking_enabled?: boolean
           public_confirmation_mode?: string
+          reminder_enabled?: boolean
+          reminder_hours_before?: number
           slot_interval_minutes?: number
           slug?: string
           timezone?: string
@@ -928,6 +953,66 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_log: {
+        Row: {
+          booking_id: string | null
+          business_id: string
+          channel: string
+          clicked_action: string | null
+          clicked_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          recipient: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          booking_id?: string | null
+          business_id: string
+          channel: string
+          clicked_action?: string | null
+          clicked_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          recipient: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          booking_id?: string | null
+          business_id?: string
+          channel?: string
+          clicked_action?: string | null
+          clicked_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          recipient?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1296,6 +1381,7 @@ export type Database = {
         Args: {
           p_booking_id: string
           p_expires_at: string
+          p_notification_id?: string
           p_purpose: string
           p_token_hash: string
         }
@@ -1316,7 +1402,13 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: undefined
       }
+      app_booking_email_data: { Args: { p_booking_id: string }; Returns: Json }
+      app_claim_reminder: { Args: { p_booking_id: string }; Returns: boolean }
       app_expire_pending: { Args: never; Returns: number }
+      app_reminder_candidates: {
+        Args: { p_limit?: number; p_now?: string }
+        Returns: Json
+      }
       app_link_my_customers: { Args: never; Returns: number }
       app_my_bookings: { Args: never; Returns: Json }
       app_public_business: { Args: { p_slug: string }; Returns: Json }
