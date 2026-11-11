@@ -1,6 +1,6 @@
 # Instrucciones para Claude Code
 
-**Lee `docs/DIRECTRICES.md` antes de cada tarea.** Es la fuente de verdad del proyecto y prevalece sobre
+**Lee `docs/DIRECTRICES.md` antes de cada tarea, y `docs/ESTADO.md` al empezar una sesión** (estado, pendientes y cómo retomar). Es la fuente de verdad del proyecto y prevalece sobre
 cualquier otra documentación del repositorio. Resumen de las reglas de trabajo (sección 26):
 
 - Antes de algo no trivial, presentar un plan breve (archivos, tablas, migraciones) y esperar aprobación.
