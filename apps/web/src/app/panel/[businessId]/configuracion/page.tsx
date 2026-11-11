@@ -3,7 +3,7 @@ import { ActionForm, SubmitButton } from '@/components/action-form';
 import { requirePermission } from '@/lib/session';
 import { t } from '@/lib/texts';
 import { siteUrl } from '@/lib/url';
-import { updateBookingSettingsAction, updateBusinessAction } from '../actions';
+import { updateBookingSettingsAction, updateBusinessAction, updateConfirmationSettingsAction } from '../actions';
 
 export const metadata = { title: 'Configuración' };
 
@@ -87,6 +87,32 @@ export default async function SettingsPage({ params }: { params: Promise<{ busin
             <div className="sm:col-span-2">
               <Checkbox name="publicBookingEnabled" label="Link público activo" defaultChecked={business.public_booking_enabled} />
             </div>
+            <div className="sm:col-span-2">
+              <SubmitButton>Guardar</SubmitButton>
+            </div>
+          </ActionForm>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6 max-w-2xl">
+        <CardHeader>
+          <CardTitle>Confirmación de reservas del link público</CardTitle>
+          <CardDescription>
+            En ambos modos puedes confirmar o cancelar cualquier reserva desde la Agenda.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionForm action={updateConfirmationSettingsAction} className="grid gap-4 sm:grid-cols-2">
+            <input type="hidden" name="businessId" value={business.id} />
+            <Field label="Modo" className="sm:col-span-2">
+              <Select name="confirmationMode" defaultValue={business.public_confirmation_mode}>
+                <option value="auto">Automático: la reserva queda confirmada al instante</option>
+                <option value="email">Por email: el cliente confirma con un botón (requiere su email)</option>
+              </Select>
+            </Field>
+            <Field label="Plazo para confirmar (minutos)" hint="Si no confirma a tiempo, el horario se libera">
+              <Input name="pendingHoldMinutes" type="number" min={5} max={1440} defaultValue={business.pending_hold_minutes} />
+            </Field>
             <div className="sm:col-span-2">
               <SubmitButton>Guardar</SubmitButton>
             </div>

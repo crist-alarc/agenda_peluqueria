@@ -56,6 +56,9 @@ export default async function BusinessLayout({
             <Link href="/panel" className="hover:underline">
               Cambiar negocio
             </Link>
+            <Link href="/mis-reservas" className="hover:underline">
+              Mis reservas
+            </Link>
             <form action={signOutAction}>
               <Button variant="link" size="xs" className="h-auto p-0 text-xs text-muted-foreground">
                 Salir

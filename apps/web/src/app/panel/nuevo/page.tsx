@@ -53,6 +53,9 @@ export default async function NewBusinessPage() {
           <Link href="/panel" className="mt-4 block text-center text-sm text-muted-foreground hover:underline">
             Volver
           </Link>
+          <Link href="/mis-reservas" className="mt-2 block text-center text-sm text-muted-foreground hover:underline">
+            ¿Solo quieres ver tus reservas? Mis reservas
+          </Link>
         </CardContent>
       </Card>
     </main>

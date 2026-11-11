@@ -1,5 +1,5 @@
 import { formatClp } from '@agenda/core';
-import { getPublicBusiness } from '@agenda/db';
+import { createServiceDbClient, getConfirmationMode, getPublicBusiness } from '@agenda/db';
 import { notFound } from 'next/navigation';
 import { BookingWizard } from '@/components/booking-wizard';
 import { getDb } from '@/lib/db';
@@ -18,6 +18,7 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
   const business = await getPublicBusiness(await getDb(), slug);
   if (!business) notFound();
 
+  const mode = await getConfirmationMode(createServiceDbClient(), business.id);
   const getSlots = getPublicSlots.bind(null, slug);
   const book = bookPublic.bind(null, slug);
 
@@ -45,6 +46,7 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
           dates={wizardDates(business.timezone, Math.min(business.maxAdvanceDays, 21))}
           getSlots={getSlots}
           book={book}
+          emailRequired={mode === 'email'}
         />
       )}
       <p className="mt-8 text-center text-xs text-muted-foreground">
