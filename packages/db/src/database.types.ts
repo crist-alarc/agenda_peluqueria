@@ -55,7 +55,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
-          price_clp: number
+          price: number
         }
         Insert: {
           active?: boolean
@@ -64,7 +64,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
-          price_clp?: number
+          price?: number
         }
         Update: {
           active?: boolean
@@ -73,7 +73,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
-          price_clp?: number
+          price?: number
         }
         Relationships: [
           {
@@ -260,7 +260,7 @@ export type Database = {
           id: string
           quantity: number
           starts_at: string
-          unit_price_clp: number
+          unit_price: number
         }
         Insert: {
           active?: boolean
@@ -273,7 +273,7 @@ export type Database = {
           id?: string
           quantity: number
           starts_at: string
-          unit_price_clp: number
+          unit_price: number
         }
         Update: {
           active?: boolean
@@ -286,7 +286,7 @@ export type Database = {
           id?: string
           quantity?: number
           starts_at?: string
-          unit_price_clp?: number
+          unit_price?: number
         }
         Relationships: [
           {
@@ -377,7 +377,7 @@ export type Database = {
           owner_business_id: string
           partnership_id: string | null
           position: number
-          price_clp: number
+          price: number
           service_id: string
           service_name: string
           starts_at: string
@@ -393,7 +393,7 @@ export type Database = {
           owner_business_id: string
           partnership_id?: string | null
           position: number
-          price_clp: number
+          price: number
           service_id: string
           service_name: string
           starts_at: string
@@ -409,7 +409,7 @@ export type Database = {
           owner_business_id?: string
           partnership_id?: string | null
           position?: number
-          price_clp?: number
+          price?: number
           service_id?: string
           service_name?: string
           starts_at?: string
@@ -520,7 +520,7 @@ export type Database = {
           sold_by_user_id: string | null
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
-          total_clp: number
+          total: number
           updated_at: string
           visible_brand_business_id: string
         }
@@ -543,7 +543,7 @@ export type Database = {
           sold_by_user_id?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["booking_status"]
-          total_clp: number
+          total: number
           updated_at?: string
           visible_brand_business_id: string
         }
@@ -566,7 +566,7 @@ export type Database = {
           sold_by_user_id?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
-          total_clp?: number
+          total?: number
           updated_at?: string
           visible_brand_business_id?: string
         }
@@ -761,7 +761,9 @@ export type Database = {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours: number
           confirmation_cutoff_hours: number
+          country: string
           created_at: string
+          currency: string
           email: string | null
           id: string
           industry_code: string
@@ -784,7 +786,9 @@ export type Database = {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
           confirmation_cutoff_hours?: number
+          country?: string
           created_at?: string
+          currency?: string
           email?: string | null
           id?: string
           industry_code: string
@@ -807,7 +811,9 @@ export type Database = {
           booking_mode?: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
           confirmation_cutoff_hours?: number
+          country?: string
           created_at?: string
+          currency?: string
           email?: string | null
           id?: string
           industry_code?: string
@@ -845,9 +851,9 @@ export type Database = {
       }
       commission_entries: {
         Row: {
-          addon_base_clp: number
-          amount_clp: number
-          base_clp: number
+          addon_base_amount: number
+          amount: number
+          base_amount: number
           booking_id: string | null
           booking_item_id: string | null
           business_id: string
@@ -865,9 +871,9 @@ export type Database = {
           share_bp: number | null
         }
         Insert: {
-          addon_base_clp?: number
-          amount_clp: number
-          base_clp?: number
+          addon_base_amount?: number
+          amount: number
+          base_amount?: number
           booking_id?: string | null
           booking_item_id?: string | null
           business_id: string
@@ -885,9 +891,9 @@ export type Database = {
           share_bp?: number | null
         }
         Update: {
-          addon_base_clp?: number
-          amount_clp?: number
-          base_clp?: number
+          addon_base_amount?: number
+          amount?: number
+          base_amount?: number
           booking_id?: string | null
           booking_item_id?: string | null
           business_id?: string
@@ -1566,7 +1572,7 @@ export type Database = {
           duration_minutes: number
           id: string
           name: string
-          price_clp: number
+          price: number
         }
         Insert: {
           active?: boolean
@@ -1579,7 +1585,7 @@ export type Database = {
           duration_minutes: number
           id?: string
           name: string
-          price_clp?: number
+          price?: number
         }
         Update: {
           active?: boolean
@@ -1592,7 +1598,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           name?: string
-          price_clp?: number
+          price?: number
         }
         Relationships: [
           {
@@ -1615,7 +1621,7 @@ export type Database = {
           period_end: string
           period_start: string
           status: string
-          total_clp: number
+          total: number
         }
         Insert: {
           business_id: string
@@ -1627,7 +1633,7 @@ export type Database = {
           period_end: string
           period_start: string
           status?: string
-          total_clp?: number
+          total?: number
         }
         Update: {
           business_id?: string
@@ -1639,7 +1645,7 @@ export type Database = {
           period_end?: string
           period_start?: string
           status?: string
-          total_clp?: number
+          total?: number
         }
         Relationships: [
           {
@@ -1665,7 +1671,7 @@ export type Database = {
     Functions: {
       app_add_commission_adjustment: {
         Args: {
-          p_amount_clp: number
+          p_amount: number
           p_business_id: string
           p_note: string
           p_professional_id: string

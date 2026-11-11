@@ -16,8 +16,10 @@ Monorepo pnpm según las directrices (ver `README.md`).
 - **Fase 1 · Fundaciones:** cerrada (aprobada por el dueño). Decisiones: `docs/adr/0001-fase-1-fundaciones.md`.
 - **Fase 2 · MVP peluquería:** programada completa (2A–2D); el piloto con una peluquería real queda para más adelante.
   Decisiones: ADR 0002 (reservas), 0003 (confirmación y portal), 0004 (emails y recordatorios), 0005 (comisiones).
-- **Fase 3 · MVP inflables:** siguiente. Antes de programar, documentar el proceso de los hermanos
-  (`docs/ESTADO.md`, sección 7: guion, alcance, entregas propuestas y preguntas abiertas).
+- **Fase 3 · MVP inflables:** en curso. Proceso de los hermanos en `docs/proceso-inflables.md`; decisiones y
+  plan aprobado en el ADR 0006 y `docs/ESTADO.md` (sección 7.5). Hecha la 3·0 (país y moneda); sigue la 3A.
+- **Dinero:** enteros en la unidad mínima de la moneda del negocio (`businesses.currency`); usar
+  `formatMoney`/`parseMoney` de `@agenda/core`, nunca formatear montos a mano (ADR 0006).
 - **Regla del dueño:** todo tiempo que afecte a usuarios es configurable por negocio (ADR 0004).
 
 Comandos de verificación antes de cada push: `pnpm typecheck`, `pnpm test`, `pnpm test:db`

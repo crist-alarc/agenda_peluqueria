@@ -102,13 +102,13 @@ describe('crear reservas', () => {
     const { id } = await book(receptionA, { resources: [carla.resource] });
     const b = await one<Record<string, unknown>>(
       ownerA,
-      `select channel, status, total_clp, created_by_user_id, sold_by_user_id, visible_brand_business_id, ends_at from public.bookings where id = $1`,
+      `select channel, status, total, created_by_user_id, sold_by_user_id, visible_brand_business_id, ends_at from public.bookings where id = $1`,
       [id],
     );
     expect(b).toMatchObject({
       channel: 'reception',
       status: 'confirmed',
-      total_clp: 12000,
+      total: 12000,
       created_by_user_id: receptionA.userId,
       sold_by_user_id: receptionA.userId,
       visible_brand_business_id: businessA,
@@ -279,7 +279,7 @@ describe('estados y cancelación', () => {
 
   it('recepción no puede mover horarios ni montos directamente', async () => {
     const [b] = await receptionA.query<{ id: string }>(`select id from public.bookings limit 1`);
-    await expect(receptionA.query(`update public.bookings set total_clp = 1 where id = $1`, [b!.id])).rejects.toThrow(
+    await expect(receptionA.query(`update public.bookings set total = 1 where id = $1`, [b!.id])).rejects.toThrow(
       /permission denied/,
     );
     await expect(receptionA.query(`delete from public.bookings where id = $1`, [b!.id])).rejects.toThrow(/permission denied/);
@@ -291,8 +291,8 @@ describe('stock de adicionales', () => {
     await ownerA.query(`insert into public.addon_stock (addon_id, branch_id, quantity) values ($1, $2, 1)`, [toalla, branchA]);
     const addons = [{ addon_id: toalla, quantity: 1 }];
     const first = await book(receptionA, { resources: [carla.resource], start: 720, addons, phone: '+56910101010' });
-    const total = await one<{ total_clp: number }>(ownerA, `select total_clp from public.bookings where id = $1`, [first.id]);
-    expect(total.total_clp).toBe(12000 + 8000);
+    const total = await one<{ total: number }>(ownerA, `select total from public.bookings where id = $1`, [first.id]);
+    expect(total.total).toBe(12000 + 8000);
     await expect(book(receptionA, { resources: [diego.resource], start: 720, addons, phone: '+56920202020' })).rejects.toThrow(
       /No queda stock/,
     );

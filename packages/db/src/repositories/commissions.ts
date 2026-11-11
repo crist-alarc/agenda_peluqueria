@@ -65,12 +65,12 @@ export type BookingCommissionData = {
   startsAt: string;
   enabled: boolean;
   locked: boolean;
-  addonsTotalClp: number;
+  addonsTotal: number;
   items: Array<{
     bookingItemId: string;
     serviceId: string;
     serviceName: string;
-    priceClp: number;
+    price: number;
     participants: Participant[];
     manualShares: Share[];
     recipe: RecipeRole[];
@@ -99,13 +99,13 @@ export async function bookingsMissingCommissions(serviceDb: DbClient, businessId
 
 export async function addCommissionAdjustment(
   db: DbClient,
-  a: { businessId: string; professionalId: string; amountClp: number; note: string },
+  a: { businessId: string; professionalId: string; amount: number; note: string },
 ): Promise<void> {
   unwrapMaybe(
     await db.rpc('app_add_commission_adjustment', {
       p_business_id: a.businessId,
       p_professional_id: a.professionalId,
-      p_amount_clp: a.amountClp,
+      p_amount: a.amount,
       p_note: a.note,
     }),
   );
@@ -169,7 +169,7 @@ export async function getBookingItemForShares(db: DbClient, bookingItemId: strin
   return unwrapMaybe(
     await db
       .from('booking_items')
-      .select('id, booking_id, business_id, service_id, service_name, starts_at, duration_minutes, price_clp')
+      .select('id, booking_id, business_id, service_id, service_name, starts_at, duration_minutes, price')
       .eq('id', bookingItemId)
       .maybeSingle(),
   );

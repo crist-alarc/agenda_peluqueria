@@ -6,6 +6,7 @@ const ctx: BookingContext = {
     id: 'b1',
     name: 'Barbería',
     timezone: 'America/Santiago',
+    currency: 'CLP',
     slot_interval_minutes: 30,
     min_advance_minutes: 60,
     max_advance_days: 30,
@@ -23,14 +24,14 @@ const ctx: BookingContext = {
       id: 's1',
       name: 'Corte',
       description: null,
-      priceClp: 10000,
+      price: 10000,
       durationMinutes: 30,
       bufferBeforeMinutes: 0,
       bufferAfterMinutes: 0,
       requirements: [{ resourceType: 'person', quantity: 1, requiredSkill: null }],
     },
   ],
-  addons: [{ id: 'a1', name: 'Toalla', priceClp: 2000, stock: 0, usage: [] }],
+  addons: [{ id: 'a1', name: 'Toalla', price: 2000, stock: 0, usage: [] }],
 };
 
 describe('contexto de reservas', () => {

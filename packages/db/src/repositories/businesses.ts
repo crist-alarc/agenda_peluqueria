@@ -60,7 +60,7 @@ export async function createBusiness(db: DbClient, input: CreateBusinessInput): 
 export async function updateBusiness(
   db: DbClient,
   businessId: string,
-  values: { name: string; phone: string | null; email: string | null; timezone: string },
+  values: { name: string; phone: string | null; email: string | null; timezone: string; country: string; currency: string },
 ): Promise<void> {
   expectRows(unwrap(await db.from('businesses').update(values).eq('id', businessId).select('id')));
 }

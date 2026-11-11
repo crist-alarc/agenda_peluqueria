@@ -98,11 +98,11 @@ describe('reparto entre profesionales', () => {
 describe('calcular comisiones de una reserva', () => {
   it('porcentaje sobre la parte del precio de cada persona', () => {
     const lines = computeBookingCommissions(
-      [{ bookingItemId: 'i1', serviceId: 'corte', priceClp: 15000, shares: [{ professionalId: 'ana', shareBp: 10000 }] }],
+      [{ bookingItemId: 'i1', serviceId: 'corte', price: 15000, shares: [{ professionalId: 'ana', shareBp: 10000 }] }],
       0,
       rules,
     );
-    expect(lines).toEqual([expect.objectContaining({ professionalId: 'ana', ruleId: 'ana', baseClp: 15000, amountClp: 6000 })]);
+    expect(lines).toEqual([expect.objectContaining({ professionalId: 'ana', ruleId: 'ana', baseAmount: 15000, amount: 6000 })]);
   });
 
   it('servicio compartido 70/30 y monto fijo repartido', () => {
@@ -111,7 +111,7 @@ describe('calcular comisiones de una reserva', () => {
         {
           bookingItemId: 'i1',
           serviceId: 'tintura',
-          priceClp: 40000,
+          price: 40000,
           shares: [
             { professionalId: 'ana', shareBp: 7000 },
             { professionalId: 'beto', shareBp: 3000 },
@@ -122,7 +122,7 @@ describe('calcular comisiones de una reserva', () => {
       rules,
     );
     // Ana: fijo $8.000 × 70% = $5.600. Beto: 50% de $12.000 = $6.000
-    expect(lines.map((l) => [l.professionalId, l.baseClp, l.amountClp])).toEqual([
+    expect(lines.map((l) => [l.professionalId, l.baseAmount, l.amount])).toEqual([
       ['ana', 28000, 5600],
       ['beto', 12000, 6000],
     ]);
@@ -131,38 +131,38 @@ describe('calcular comisiones de una reserva', () => {
   it('los adicionales suman solo si la regla lo indica', () => {
     const withAddons = [rule({ id: 'g', value: 1000, includeAddons: true })];
     const items = [
-      { bookingItemId: 'i1', serviceId: 'corte', priceClp: 10000, shares: [{ professionalId: 'a', shareBp: 10000 }] },
-      { bookingItemId: 'i2', serviceId: 'barba', priceClp: 5000, shares: [{ professionalId: 'b', shareBp: 10000 }] },
+      { bookingItemId: 'i1', serviceId: 'corte', price: 10000, shares: [{ professionalId: 'a', shareBp: 10000 }] },
+      { bookingItemId: 'i2', serviceId: 'barba', price: 5000, shares: [{ professionalId: 'b', shareBp: 10000 }] },
     ];
     // $3.000 en adicionales: 2/3 al corte, 1/3 a la barba
     const lines = computeBookingCommissions(items, 3000, withAddons);
-    expect(lines.map((l) => [l.professionalId, l.addonBaseClp, l.amountClp])).toEqual([
+    expect(lines.map((l) => [l.professionalId, l.addonBaseAmount, l.amount])).toEqual([
       ['a', 2000, 1200],
       ['b', 1000, 600],
     ]);
-    expect(computeBookingCommissions(items, 3000, [rule({ id: 'g', value: 1000 })]).map((l) => l.amountClp)).toEqual([1000, 500]);
+    expect(computeBookingCommissions(items, 3000, [rule({ id: 'g', value: 1000 })]).map((l) => l.amount)).toEqual([1000, 500]);
   });
 
   it('montos en pesos enteros y sin regla la comisión es 0', () => {
     const lines = computeBookingCommissions(
-      [{ bookingItemId: 'i1', serviceId: 'corte', priceClp: 9999, shares: [{ professionalId: 'x', shareBp: 10000 }] }],
+      [{ bookingItemId: 'i1', serviceId: 'corte', price: 9999, shares: [{ professionalId: 'x', shareBp: 10000 }] }],
       0,
       [rule({ id: 'g', value: 3333 })],
     );
-    expect(lines[0]!.amountClp).toBe(3333);
-    expect(Number.isInteger(lines[0]!.amountClp)).toBe(true);
+    expect(lines[0]!.amount).toBe(3333);
+    expect(Number.isInteger(lines[0]!.amount)).toBe(true);
     const none = computeBookingCommissions(
-      [{ bookingItemId: 'i1', serviceId: 'corte', priceClp: 9999, shares: [{ professionalId: 'x', shareBp: 10000 }] }],
+      [{ bookingItemId: 'i1', serviceId: 'corte', price: 9999, shares: [{ professionalId: 'x', shareBp: 10000 }] }],
       0,
       [],
     );
-    expect(none[0]).toMatchObject({ ruleId: null, amountClp: 0 });
+    expect(none[0]).toMatchObject({ ruleId: null, amount: 0 });
   });
 
   it('rechaza un reparto que no suma 100%', () => {
     expect(() =>
       computeBookingCommissions(
-        [{ bookingItemId: 'i1', serviceId: 'c', priceClp: 1000, shares: [{ professionalId: 'a', shareBp: 9000 }] }],
+        [{ bookingItemId: 'i1', serviceId: 'c', price: 1000, shares: [{ professionalId: 'a', shareBp: 9000 }] }],
         0,
         rules,
       ),
@@ -173,13 +173,13 @@ describe('calcular comisiones de una reserva', () => {
 describe('liquidación', () => {
   it('suma por persona servicios y ajustes', () => {
     const s = summarizeSettlement([
-      { professionalId: 'b', professionalName: 'Beto', kind: 'service', amountClp: 6000 },
-      { professionalId: 'a', professionalName: 'Ana', kind: 'service', amountClp: 5600 },
-      { professionalId: 'a', professionalName: 'Ana', kind: 'service', amountClp: 4000 },
-      { professionalId: 'a', professionalName: 'Ana', kind: 'adjustment', amountClp: -1000 },
+      { professionalId: 'b', professionalName: 'Beto', kind: 'service', amount: 6000 },
+      { professionalId: 'a', professionalName: 'Ana', kind: 'service', amount: 5600 },
+      { professionalId: 'a', professionalName: 'Ana', kind: 'service', amount: 4000 },
+      { professionalId: 'a', professionalName: 'Ana', kind: 'adjustment', amount: -1000 },
     ]);
-    expect(s.totalClp).toBe(14600);
-    expect(s.people.map((p) => [p.name, p.count, p.servicesClp, p.adjustmentsClp, p.totalClp])).toEqual([
+    expect(s.total).toBe(14600);
+    expect(s.people.map((p) => [p.name, p.count, p.servicesTotal, p.adjustmentsTotal, p.total])).toEqual([
       ['Ana', 2, 9600, -1000, 8600],
       ['Beto', 1, 6000, 0, 6000],
     ]);
@@ -206,9 +206,9 @@ describe('formatos y validación', () => {
 
   it('una regla de porcentaje no pasa de 100% y una fija es un monto entero', () => {
     const base = { businessId: '00000000-0000-4000-8000-000000000000', professionalId: '', serviceId: '' };
-    expect(commissionRuleSchema.parse({ ...base, kind: 'percent', value: '40' })).toMatchObject({ valueStored: 4000, professionalId: null });
-    expect(commissionRuleSchema.parse({ ...base, kind: 'fixed', value: '5.000' })).toMatchObject({ valueStored: 5000 });
-    expect(() => commissionRuleSchema.parse({ ...base, kind: 'percent', value: '150' })).toThrow();
+    expect(commissionRuleSchema('CLP').parse({ ...base, kind: 'percent', value: '40' })).toMatchObject({ valueStored: 4000, professionalId: null });
+    expect(commissionRuleSchema('CLP').parse({ ...base, kind: 'fixed', value: '5.000' })).toMatchObject({ valueStored: 5000 });
+    expect(() => commissionRuleSchema('CLP').parse({ ...base, kind: 'percent', value: '150' })).toThrow();
   });
 
   it('el reparto manual del formulario debe sumar 100%', () => {

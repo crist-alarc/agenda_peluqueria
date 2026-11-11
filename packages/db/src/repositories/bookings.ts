@@ -8,14 +8,15 @@ export type PublicBusiness = {
   name: string;
   slug: string;
   timezone: string;
+  currency: string;
   phone: string | null;
   bookingMode: string;
   maxAdvanceDays: number;
   cancellationHours: number;
   branches: Array<{ id: string; name: string; address: string | null; commune: string | null }>;
-  services: Array<{ id: string; name: string; description: string | null; durationMinutes: number; priceClp: number; needsPerson: boolean }>;
+  services: Array<{ id: string; name: string; description: string | null; durationMinutes: number; price: number; needsPerson: boolean }>;
   people: Array<{ id: string; name: string; branchId: string }>;
-  addons: Array<{ id: string; name: string; description: string | null; priceClp: number }>;
+  addons: Array<{ id: string; name: string; description: string | null; price: number }>;
 };
 
 /** Datos públicos para el link de reservas. null si no existe o está desactivado. */
@@ -62,9 +63,9 @@ export async function createBooking(db: DbClient, b: NewBooking): Promise<string
 
 export type AgendaBooking = Tables<'bookings'> & {
   customer: Pick<Tables<'customers'>, 'id' | 'full_name' | 'phone' | 'email'> | null;
-  booking_items: Array<Pick<Tables<'booking_items'>, 'id' | 'position' | 'service_name' | 'starts_at' | 'ends_at' | 'price_clp'>>;
+  booking_items: Array<Pick<Tables<'booking_items'>, 'id' | 'position' | 'service_name' | 'starts_at' | 'ends_at' | 'price'>>;
   allocations: Array<Pick<Tables<'allocations'>, 'resource_id' | 'starts_at' | 'ends_at' | 'booking_item_id'>>;
-  booking_addons: Array<Pick<Tables<'booking_addons'>, 'addon_name' | 'quantity' | 'unit_price_clp'>>;
+  booking_addons: Array<Pick<Tables<'booking_addons'>, 'addon_name' | 'quantity' | 'unit_price'>>;
 };
 
 /** Reservas de una sucursal entre dos instantes (agenda de recepción o del profesional). */
@@ -73,7 +74,7 @@ export async function listAgenda(db: DbClient, args: { branchId: string; from: s
     await db
       .from('bookings')
       .select(
-        '*, customer:customers(id, full_name, phone, email), booking_items(id, position, service_name, starts_at, ends_at, price_clp), allocations(resource_id, starts_at, ends_at, booking_item_id), booking_addons(addon_name, quantity, unit_price_clp)',
+        '*, customer:customers(id, full_name, phone, email), booking_items(id, position, service_name, starts_at, ends_at, price), allocations(resource_id, starts_at, ends_at, booking_item_id), booking_addons(addon_name, quantity, unit_price)',
       )
       .eq('branch_id', args.branchId)
       .lt('starts_at', args.to)
@@ -154,7 +155,8 @@ export type TokenResult = {
     businessName: string;
     businessSlug: string;
     timezone: string;
-    totalClp: number;
+    currency: string;
+    total: number;
     services: string[];
   };
 };
@@ -195,10 +197,11 @@ export type MyBooking = {
   status: BookingStatus;
   startsAt: string;
   endsAt: string;
-  totalClp: number;
+  total: number;
   businessName: string;
   businessSlug: string;
   timezone: string;
+  currency: string;
   cancellationHours: number;
   services: string[];
 };
@@ -231,7 +234,7 @@ export type BookingEmailData = {
   startsAt: string;
   endsAt: string;
   createdAt: string;
-  totalClp: number;
+  total: number;
   holdExpiresAt: string | null;
   reminderSentAt: string | null;
   attendanceConfirmedAt: string | null;
@@ -240,6 +243,7 @@ export type BookingEmailData = {
   brand: string;
   businessSlug: string;
   timezone: string;
+  currency: string;
   branchName: string;
   branchAddress: string;
   settings: {

@@ -1,4 +1,4 @@
-import { formatClp } from '@agenda/core';
+import { formatMoney } from '@agenda/core';
 import { createServiceDbClient, getConfirmationMode, getPublicBusiness } from '@agenda/db';
 import { notFound } from 'next/navigation';
 import { BookingWizard } from '@/components/booking-wizard';
@@ -40,9 +40,9 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
           mode="public"
           businessId={business.id}
           branches={business.branches}
-          services={business.services.map((s) => ({ ...s, priceLabel: formatClp(s.priceClp) }))}
+          services={business.services.map((s) => ({ ...s, priceLabel: formatMoney(s.price, business.currency) }))}
           people={business.people}
-          addons={business.addons.map((a) => ({ id: a.id, name: a.name, priceLabel: formatClp(a.priceClp) }))}
+          addons={business.addons.map((a) => ({ id: a.id, name: a.name, priceLabel: formatMoney(a.price, business.currency) }))}
           dates={wizardDates(business.timezone, Math.min(business.maxAdvanceDays, 21))}
           getSlots={getSlots}
           book={book}

@@ -1,4 +1,4 @@
-import { can, formatClp } from '@agenda/core';
+import { can, formatMoney } from '@agenda/core';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, PageHeader } from '@agenda/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -34,7 +34,7 @@ export default async function SettlementPage({ params }: { params: Promise<{ bus
     <>
       <PageHeader
         title={`Liquidación ${report.periodLabel}`}
-        description={`Total: ${formatClp(report.summary.totalClp)}`}
+        description={`Total: ${formatMoney(report.summary.total, report.currency)}`}
         actions={<Badge variant={STATUS_VARIANT[s.status as keyof typeof STATUS_VARIANT]}>{report.statusLabel}</Badge>}
       />
       <div className="mb-6 flex flex-wrap gap-2">
@@ -56,12 +56,12 @@ export default async function SettlementPage({ params }: { params: Promise<{ bus
           <Card key={p.professionalId} role="region" aria-label={`Comisiones de ${p.name}`}>
             <CardHeader className="flex flex-row items-baseline justify-between gap-2">
               <CardTitle>{p.name}</CardTitle>
-              <span className="text-lg font-semibold tabular-nums">{formatClp(p.totalClp)}</span>
+              <span className="text-lg font-semibold tabular-nums">{formatMoney(p.total, report.currency)}</span>
             </CardHeader>
             <CardContent>
               <p className="mb-2 text-sm text-muted-foreground">
-                {p.count} {p.count === 1 ? 'servicio' : 'servicios'}: {formatClp(p.servicesClp)}
-                {p.adjustmentsClp !== 0 && ` · ajustes: ${formatClp(p.adjustmentsClp)}`}
+                {p.count} {p.count === 1 ? 'servicio' : 'servicios'}: {formatMoney(p.servicesTotal, report.currency)}
+                {p.adjustmentsTotal !== 0 && ` · ajustes: ${formatMoney(p.adjustmentsTotal, report.currency)}`}
               </p>
               <ul className="divide-y text-sm">
                 {report.lines
@@ -72,11 +72,11 @@ export default async function SettlementPage({ params }: { params: Promise<{ bus
                         {l.kind === 'adjustment' ? `Ajuste · ${l.note}` : `${l.date} ${l.time} · ${l.service}`}
                         {l.kind === 'service' && (
                           <span className="block text-xs text-muted-foreground">
-                            {[l.customer, `base ${formatClp(l.baseClp)}`, l.share !== '100%' ? `parte ${l.share}` : '', l.rule].filter(Boolean).join(' · ')}
+                            {[l.customer, `base ${formatMoney(l.baseAmount, report.currency)}`, l.share !== '100%' ? `parte ${l.share}` : '', l.rule].filter(Boolean).join(' · ')}
                           </span>
                         )}
                       </span>
-                      <span className="tabular-nums">{formatClp(l.amountClp)}</span>
+                      <span className="tabular-nums">{formatMoney(l.amount, report.currency)}</span>
                     </li>
                   ))}
               </ul>

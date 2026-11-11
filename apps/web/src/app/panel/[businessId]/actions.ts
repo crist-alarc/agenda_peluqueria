@@ -79,6 +79,8 @@ export async function updateBusinessAction(_: ActionState, form: FormData): Prom
       phone: input.phone,
       email: input.email,
       timezone: input.timezone,
+      country: input.country,
+      currency: input.currency,
     });
     revalidatePath(`/panel/${input.businessId}`, 'layout');
     return ok(t.saved);
@@ -200,7 +202,7 @@ export async function deleteResourceAction(_: ActionState, form: FormData): Prom
 export async function saveServiceAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const { db, business } = await contextFor(form, 'catalog.manage');
-    const input = serviceSchema.parse({ ...formToObject(form), requirements: jsonField(form, 'requirements') });
+    const input = serviceSchema(business.currency).parse({ ...formToObject(form), requirements: jsonField(form, 'requirements') });
     if (input.serviceId) await repo.updateService(db, input.serviceId, input);
     else await repo.createService(db, input, business.booking_mode);
     revalidate(business.id, '/servicios');
@@ -227,8 +229,8 @@ export async function deleteServiceAction(_: ActionState, form: FormData): Promi
 export async function saveAddonAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const { db, business } = await contextFor(form, 'catalog.manage');
-    const input = addonSchema.parse(formToObject(form));
-    const values = { name: input.name, description: input.description, price_clp: input.priceClp, active: input.active };
+    const input = addonSchema(business.currency).parse(formToObject(form));
+    const values = { name: input.name, description: input.description, price: input.price, active: input.active };
     if (input.addonId) await repo.updateAddon(db, input.addonId, values);
     else await repo.createAddon(db, { ...values, business_id: business.id });
     revalidate(business.id, '/adicionales');

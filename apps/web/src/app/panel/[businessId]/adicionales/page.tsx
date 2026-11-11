@@ -1,4 +1,4 @@
-import { can, canManageBranch, formatClp } from '@agenda/core';
+import { can, canManageBranch, formatMoney, moneyInputHint, moneyInputValue } from '@agenda/core';
 import { listAddons, listBranches, type Addon } from '@agenda/db';
 import { Badge, Button, Card, CardContent, CardTitle, Checkbox, EmptyState, Field, Input, PageHeader, Textarea } from '@agenda/ui';
 import { ActionForm, SubmitButton } from '@/components/action-form';
@@ -27,7 +27,7 @@ export default async function AddonsPage({ params }: { params: Promise<{ busines
               <CardTitle>Nuevo adicional</CardTitle>
             </summary>
             <CardContent>
-              <AddonForm businessId={business.id} />
+              <AddonForm businessId={business.id} currency={business.currency} />
             </CardContent>
           </details>
         </Card>
@@ -44,7 +44,7 @@ export default async function AddonsPage({ params }: { params: Promise<{ busines
                   <span className="font-medium">{a.name}</span>
                   {!a.active && <Badge variant="muted">Inactivo</Badge>}
                   <span className="ml-auto text-sm tabular-nums text-muted-foreground">
-                    {formatClp(a.price_clp)} · stock total {a.addon_stock.reduce((sum, s) => sum + s.quantity, 0)}
+                    {formatMoney(a.price, business.currency)} · stock total {a.addon_stock.reduce((sum, s) => sum + s.quantity, 0)}
                   </span>
                 </summary>
                 <div className="space-y-5 border-t p-4">
@@ -81,7 +81,7 @@ export default async function AddonsPage({ params }: { params: Promise<{ busines
                   </div>
                   {editable && (
                     <>
-                      <AddonForm businessId={business.id} addon={a} />
+                      <AddonForm businessId={business.id} currency={business.currency} addon={a} />
                       <ActionForm action={deleteAddonAction} confirm={`¿Eliminar ${a.name}?`} className="border-t pt-4">
                         <input type="hidden" name="businessId" value={business.id} />
                         <input type="hidden" name="addonId" value={a.id} />
@@ -101,7 +101,7 @@ export default async function AddonsPage({ params }: { params: Promise<{ busines
   );
 }
 
-function AddonForm({ businessId, addon }: { businessId: string; addon?: Addon }) {
+function AddonForm({ businessId, currency, addon }: { businessId: string; currency: string; addon?: Addon }) {
   return (
     <ActionForm action={saveAddonAction} className="grid gap-4 sm:grid-cols-2" resetOnSuccess={!addon}>
       <input type="hidden" name="businessId" value={businessId} />
@@ -109,8 +109,8 @@ function AddonForm({ businessId, addon }: { businessId: string; addon?: Addon })
       <Field label="Nombre">
         <Input name="name" defaultValue={addon?.name} required />
       </Field>
-      <Field label="Precio (CLP)" hint="Pesos enteros">
-        <Input name="priceClp" inputMode="numeric" defaultValue={addon?.price_clp ?? ''} required />
+      <Field label={`Precio (${currency})`} hint={moneyInputHint(currency)}>
+        <Input name="price" inputMode="numeric" defaultValue={addon ? moneyInputValue(addon.price, currency) : ''} required />
       </Field>
       <Field label="Descripción" className="sm:col-span-2">
         <Textarea name="description" defaultValue={addon?.description ?? ''} rows={2} />

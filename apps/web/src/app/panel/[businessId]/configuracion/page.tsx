@@ -1,3 +1,4 @@
+import { COUNTRIES, COUNTRY_CODES, CURRENCIES, CURRENCY_CODES } from '@agenda/core';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Field, Input, PageHeader, Select } from '@agenda/ui';
 import { notificationStats } from '@agenda/db';
 import { ActionForm, SubmitButton } from '@/components/action-form';
@@ -42,6 +43,24 @@ export default async function SettingsPage({ params }: { params: Promise<{ busin
               <Select name="timezone" defaultValue={business.timezone}>
                 {[...new Set([business.timezone, ...TIMEZONES])].map((tz) => (
                   <option key={tz}>{tz}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="País">
+              <Select name="country" defaultValue={business.country}>
+                {COUNTRY_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {COUNTRIES[code].name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Moneda" hint="No se puede cambiar cuando ya hay reservas">
+              <Select name="currency" defaultValue={business.currency}>
+                {CURRENCY_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {CURRENCIES[code].name} ({code})
+                  </option>
                 ))}
               </Select>
             </Field>

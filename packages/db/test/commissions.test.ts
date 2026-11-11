@@ -51,9 +51,9 @@ async function completedBooking() {
   const resource = (await pool.query<{ id: string }>(`select id from public.resources where professional_id = $1`, [ana])).rows[0]!.id;
   const { rows } = await pool.query<{ id: string; item: string }>(
     `with c as (insert into public.customers (business_id, full_name, phone) values ($1, 'Cliente', $2) returning id),
-     b as (insert into public.bookings (business_id, branch_id, customer_id, channel, status, starts_at, ends_at, total_clp, visible_brand_business_id)
+     b as (insert into public.bookings (business_id, branch_id, customer_id, channel, status, starts_at, ends_at, total, visible_brand_business_id)
            select $1, $3, c.id, 'reception', 'confirmed', $4, $5, 20000, $1 from c returning id),
-     i as (insert into public.booking_items (booking_id, business_id, owner_business_id, service_id, service_name, position, starts_at, ends_at, duration_minutes, price_clp)
+     i as (insert into public.booking_items (booking_id, business_id, owner_business_id, service_id, service_name, position, starts_at, ends_at, duration_minutes, price)
            select b.id, $1, $1, $6, 'Corte de pelo', 0, $4, $5, 30, 20000 from b returning id, booking_id)
      select i.booking_id as id, i.id as item from i`,
     [business, `+5699${String(slot).padStart(7, '0')}`, branch, at(slot), at(slot + 30), corte],
@@ -69,16 +69,16 @@ async function completedBooking() {
 
 const lines = (item: string, amounts: Array<[string, number]>) =>
   JSON.stringify(
-    amounts.map(([professionalId, amountClp]) => ({
+    amounts.map(([professionalId, amount]) => ({
       professionalId,
       bookingItemId: item,
       shareBp: Math.round(10000 / amounts.length),
-      baseClp: 20000,
-      addonBaseClp: 0,
+      baseAmount: 20000,
+      addonBaseAmount: 0,
       ruleId: null,
       ruleKind: 'percent',
       ruleValue: 4000,
-      amountClp,
+      amount,
     })),
   );
 
@@ -196,9 +196,9 @@ describe('movimientos y liquidaciones', () => {
     expect((await one<{ n: number }>(server, `select public.app_replace_booking_commissions($1, $2) as n`, [id, lines(item, [[ana, 8000]])])).n).toBe(1);
     // Recalcular reemplaza, no duplica
     await server.query(`select public.app_replace_booking_commissions($1, $2)`, [id, lines(item, [[ana, 5600], [beto, 6000]])]);
-    expect(await owner.query(`select amount_clp from public.commission_entries where booking_id = $1 order by amount_clp`, [id])).toEqual([
-      { amount_clp: 5600 },
-      { amount_clp: 6000 },
+    expect(await owner.query(`select amount from public.commission_entries where booking_id = $1 order by amount`, [id])).toEqual([
+      { amount: 5600 },
+      { amount: 6000 },
     ]);
   });
 
@@ -207,7 +207,7 @@ describe('movimientos y liquidaciones', () => {
     expect(mine.length).toBeGreaterThan(0);
     expect(mine.every((r) => r.professional_id === ana)).toBe(true);
     expect(await stranger.query(`select id from public.commission_entries`)).toHaveLength(0);
-    await expect(owner.query(`update public.commission_entries set amount_clp = 1`)).rejects.toThrow(/permission denied/);
+    await expect(owner.query(`update public.commission_entries set amount = 1`)).rejects.toThrow(/permission denied/);
   });
 
   it('una liquidación cerrada no cambia; las correcciones son ajustes que van a la siguiente', async () => {
@@ -215,13 +215,13 @@ describe('movimientos y liquidaciones', () => {
     await server.query(`select public.app_replace_booking_commissions($1, $2)`, [id, lines(item, [[ana, 8000]])]);
     const today = new Date().toISOString().slice(0, 10);
     const s1 = (await one<{ id: string }>(owner, `select public.app_create_settlement($1, '2020-01-01', $2) as id`, [business, today])).id;
-    const total = await one<{ total_clp: string; status: string }>(owner, `select total_clp, status from public.settlements where id = $1`, [s1]);
+    const total = await one<{ total: string; status: string }>(owner, `select total, status from public.settlements where id = $1`, [s1]);
     expect(total.status).toBe('draft');
-    expect(Number(total.total_clp)).toBe(5600 + 6000 + 8000);
+    expect(Number(total.total)).toBe(5600 + 6000 + 8000);
 
     // En borrador todavía se puede recalcular (sigue en la misma liquidación)
     await server.query(`select public.app_replace_booking_commissions($1, $2)`, [id, lines(item, [[ana, 9000]])]);
-    expect(Number((await one<{ total_clp: string }>(owner, `select total_clp from public.settlements where id = $1`, [s1])).total_clp)).toBe(20600);
+    expect(Number((await one<{ total: string }>(owner, `select total from public.settlements where id = $1`, [s1])).total)).toBe(20600);
 
     await owner.query(`select public.app_set_settlement_status($1, 'closed')`, [s1]);
     await expect(server.query(`select public.app_replace_booking_commissions($1, $2)`, [id, lines(item, [[ana, 1]])])).rejects.toThrow(
@@ -230,10 +230,10 @@ describe('movimientos y liquidaciones', () => {
     await expect(owner.query(`select public.app_set_item_shares($1, '[]')`, [item])).rejects.toThrow(/liquidación cerrada/);
     await expect(owner.query(`select public.app_set_settlement_status($1, 'deleted')`, [s1])).rejects.toThrow(/No se puede/);
     // Ni siquiera la clave de servicio puede cambiar un movimiento cerrado
-    await expect(server.query(`update public.commission_entries set amount_clp = 1 where settlement_id = $1`, [s1])).rejects.toThrow(
+    await expect(server.query(`update public.commission_entries set amount = 1 where settlement_id = $1`, [s1])).rejects.toThrow(
       /liquidación cerrada/,
     );
-    await expect(server.query(`update public.settlements set total_clp = 1 where id = $1`, [s1])).rejects.toThrow(/no se modifica/);
+    await expect(server.query(`update public.settlements set total = 1 where id = $1`, [s1])).rejects.toThrow(/no se modifica/);
 
     await expect(owner.query(`select public.app_add_commission_adjustment($1, $2, -1000, '')`, [business, ana])).rejects.toThrow(/check/);
     await expect(owner.query(`select public.app_add_commission_adjustment($1, $2, 500, 'Bono')`, [business, otherPro])).rejects.toThrow(
@@ -244,7 +244,7 @@ describe('movimientos y liquidaciones', () => {
     );
     await owner.query(`select public.app_add_commission_adjustment($1, $2, -1000, 'Corrección de la tintura del día 3')`, [business, ana]);
     const s2 = (await one<{ id: string }>(owner, `select public.app_create_settlement($1, $2, $2) as id`, [business, today])).id;
-    expect(Number((await one<{ total_clp: string }>(owner, `select total_clp from public.settlements where id = $1`, [s2])).total_clp)).toBe(-1000);
+    expect(Number((await one<{ total: string }>(owner, `select total from public.settlements where id = $1`, [s2])).total)).toBe(-1000);
 
     await owner.query(`select public.app_set_settlement_status($1, 'paid')`, [s1]);
     expect((await one<{ status: string }>(owner, `select status from public.settlements where id = $1`, [s1])).status).toBe('paid');

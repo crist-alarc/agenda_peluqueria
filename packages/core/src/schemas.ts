@@ -4,7 +4,7 @@
  * Los mensajes van en español de Chile porque se muestran directamente al usuario.
  */
 import { z } from 'zod';
-import { InvalidAmountError, parseClp } from './money';
+import { COUNTRY_CODES, CURRENCY_CODES, type Currency, InvalidAmountError, parseMoney } from './money';
 import { ROLES } from './roles';
 import { FULL_SHARE, SETTLEMENT_PERIODS, formatPercent, parsePercent, sharesFromWeights, validateShares, type Share } from './commissions';
 import { findOverlaps, isValidTimeZone, timeToMinutes } from './time';
@@ -39,17 +39,19 @@ const minutes = (label: string, min: number, max: number) =>
     .int(`${label} debe ser un número entero`)
     .min(min, `${label} debe ser al menos ${min}`)
     .max(max, `${label} no puede superar ${max}`);
-const clp = z.union([z.string(), z.number()]).transform((value, ctx) => {
-  try {
-    return parseClp(value === '' ? 0 : value);
-  } catch (error) {
-    ctx.addIssue({
-      code: 'custom',
-      message: error instanceof InvalidAmountError ? error.message : 'Monto no válido',
-    });
-    return z.NEVER;
-  }
-});
+/** Monto en la moneda del negocio, guardado como entero en su unidad mínima (ADR 0006). */
+const money = (currency: Currency) =>
+  z.union([z.string(), z.number()]).transform((value, ctx) => {
+    try {
+      return parseMoney(value === '' ? 0 : value, currency);
+    } catch (error) {
+      ctx.addIssue({
+        code: 'custom',
+        message: error instanceof InvalidAmountError ? error.message : 'Monto no válido',
+      });
+      return z.NEVER;
+    }
+  });
 const checkbox = z
   .union([z.boolean(), z.literal('on'), z.literal('true'), z.literal('false'), z.literal('')])
   .optional()
@@ -80,6 +82,8 @@ export const updateBusinessSchema = z.object({
     .optional()
     .transform((v) => (v ? v : null)),
   timezone: z.string().refine(isValidTimeZone, 'Zona horaria no válida'),
+  country: z.enum(COUNTRY_CODES, { message: 'País no habilitado' }),
+  currency: z.enum(CURRENCY_CODES, { message: 'Moneda no habilitada' }),
 });
 
 // ---------------------------------------------------------------------------
@@ -174,31 +178,33 @@ export const requirementSchema = z.object({
     .transform((v) => (v ? v : null)),
 });
 
-export const serviceSchema = z.object({
-  businessId: uuid,
-  serviceId: uuid.optional(),
-  name: name('El nombre del servicio'),
-  description: optionalText(500),
-  durationMinutes: minutes('La duración', 5, 10080),
-  priceClp: clp,
-  bufferBeforeMinutes: minutes('La holgura previa', 0, 1440).default(0),
-  bufferAfterMinutes: minutes('La holgura posterior', 0, 1440).default(0),
-  active: checkbox,
-  requirements: z.array(requirementSchema).max(10).default([]),
-});
-export type ServiceInput = z.infer<typeof serviceSchema>;
+export const serviceSchema = (currency: Currency) =>
+  z.object({
+    businessId: uuid,
+    serviceId: uuid.optional(),
+    name: name('El nombre del servicio'),
+    description: optionalText(500),
+    durationMinutes: minutes('La duración', 5, 10080),
+    price: money(currency),
+    bufferBeforeMinutes: minutes('La holgura previa', 0, 1440).default(0),
+    bufferAfterMinutes: minutes('La holgura posterior', 0, 1440).default(0),
+    active: checkbox,
+    requirements: z.array(requirementSchema).max(10).default([]),
+  });
+export type ServiceInput = z.infer<ReturnType<typeof serviceSchema>>;
 
 // ---------------------------------------------------------------------------
 // Adicionales
 // ---------------------------------------------------------------------------
-export const addonSchema = z.object({
-  businessId: uuid,
-  addonId: uuid.optional(),
-  name: name('El nombre del adicional'),
-  description: optionalText(500),
-  priceClp: clp,
-  active: checkbox,
-});
+export const addonSchema = (currency: Currency) =>
+  z.object({
+    businessId: uuid,
+    addonId: uuid.optional(),
+    name: name('El nombre del adicional'),
+    description: optionalText(500),
+    price: money(currency),
+    active: checkbox,
+  });
 
 export const addonStockSchema = z.object({
   businessId: uuid,
@@ -348,35 +354,36 @@ const optionalId = z
   .optional()
   .transform((v) => (v ? v : null));
 
-/** Regla de comisión: porcentaje (se guarda en puntos básicos) o monto fijo en CLP. */
-export const commissionRuleSchema = z
-  .object({
-    businessId: uuid,
-    professionalId: optionalId,
-    serviceId: optionalId,
-    kind: z.enum(['percent', 'fixed'], { message: 'Elige porcentaje o monto fijo' }),
-    value: z.string({ message: 'Ingresa el valor' }).trim().min(1, 'Ingresa el valor'),
-    includeAddons: checkbox,
-  })
-  .transform((v, ctx) => {
-    let valueStored: number;
-    if (v.kind === 'percent') {
-      const n = Number(v.value.replace('%', '').replace(',', '.'));
-      if (!Number.isFinite(n) || n < 0 || n > 100) {
-        ctx.addIssue({ code: 'custom', message: 'El porcentaje debe estar entre 0 y 100', path: ['value'] });
-        return z.NEVER;
+/** Regla de comisión: porcentaje (se guarda en puntos básicos) o monto fijo en la moneda del negocio. */
+export const commissionRuleSchema = (currency: Currency) =>
+  z
+    .object({
+      businessId: uuid,
+      professionalId: optionalId,
+      serviceId: optionalId,
+      kind: z.enum(['percent', 'fixed'], { message: 'Elige porcentaje o monto fijo' }),
+      value: z.string({ message: 'Ingresa el valor' }).trim().min(1, 'Ingresa el valor'),
+      includeAddons: checkbox,
+    })
+    .transform((v, ctx) => {
+      let valueStored: number;
+      if (v.kind === 'percent') {
+        const n = Number(v.value.replace('%', '').replace(',', '.'));
+        if (!Number.isFinite(n) || n < 0 || n > 100) {
+          ctx.addIssue({ code: 'custom', message: 'El porcentaje debe estar entre 0 y 100', path: ['value'] });
+          return z.NEVER;
+        }
+        valueStored = Math.round(n * 100);
+      } else {
+        try {
+          valueStored = parseMoney(v.value, currency);
+        } catch (error) {
+          ctx.addIssue({ code: 'custom', message: (error as Error).message, path: ['value'] });
+          return z.NEVER;
+        }
       }
-      valueStored = Math.round(n * 100);
-    } else {
-      try {
-        valueStored = parseClp(v.value);
-      } catch (error) {
-        ctx.addIssue({ code: 'custom', message: (error as Error).message, path: ['value'] });
-        return z.NEVER;
-      }
-    }
-    return { ...v, valueStored };
-  });
+      return { ...v, valueStored };
+    });
 
 const shareRow = z.object({ professionalId: uuid, value: z.string().trim() });
 
@@ -438,16 +445,17 @@ export const serviceRecipeSchema = z
   });
 
 /** Ajuste a la comisión de una persona (positivo o negativo), siempre con motivo. */
-export const commissionAdjustmentSchema = z
-  .object({
-    businessId: uuid,
-    professionalId: uuid,
-    sign: z.enum(['+', '-']),
-    amount: clp,
-    note: z.string({ message: 'Indica el motivo' }).trim().min(3, 'Indica el motivo').max(300),
-  })
-  .refine((v) => v.amount > 0, { message: 'El monto debe ser mayor que 0', path: ['amount'] })
-  .transform((v) => ({ ...v, amountClp: v.sign === '-' ? -v.amount : v.amount }));
+export const commissionAdjustmentSchema = (currency: Currency) =>
+  z
+    .object({
+      businessId: uuid,
+      professionalId: uuid,
+      sign: z.enum(['+', '-']),
+      amount: money(currency),
+      note: z.string({ message: 'Indica el motivo' }).trim().min(3, 'Indica el motivo').max(300),
+    })
+    .refine((v) => v.amount > 0, { message: 'El monto debe ser mayor que 0', path: ['amount'] })
+    .transform((v) => ({ ...v, amount: v.sign === '-' ? -v.amount : v.amount }));
 
 export const settlementPeriodSchema = z
   .object({
