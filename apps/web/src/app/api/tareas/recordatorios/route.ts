@@ -19,6 +19,10 @@ function authorized(request: Request): boolean {
 }
 
 export async function POST(request: Request) {
+  // Sin la variable no hay clave que comparar: se informa (sin revelar nada) para poder diagnosticar
+  if (!process.env.CRON_SECRET) {
+    return Response.json({ error: 'Falta CRON_SECRET en las variables del servidor' }, { status: 503 });
+  }
   if (!authorized(request)) {
     return Response.json({ error: 'No autorizado' }, { status: 401 });
   }
