@@ -41,7 +41,7 @@ const refresh = (businessId: string) => revalidatePath(`/panel/${businessId}/com
 export async function createRuleAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const { db, business } = await manager(form);
-    const r = commissionRuleSchema.parse(formToObject(form));
+    const r = commissionRuleSchema(business.currency).parse(formToObject(form));
     await repo.createCommissionRule(db, {
       businessId: business.id,
       professionalId: r.professionalId,
@@ -119,8 +119,8 @@ export async function saveSharesAction(_: ActionState, form: FormData): Promise<
 export async function adjustmentAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const { db, business } = await manager(form);
-    const a = commissionAdjustmentSchema.parse(formToObject(form));
-    await repo.addCommissionAdjustment(db, { businessId: business.id, professionalId: a.professionalId, amountClp: a.amountClp, note: a.note });
+    const a = commissionAdjustmentSchema(business.currency).parse(formToObject(form));
+    await repo.addCommissionAdjustment(db, { businessId: business.id, professionalId: a.professionalId, amount: a.amount, note: a.note });
     refresh(business.id);
     return ok('Ajuste registrado: entra en la próxima liquidación');
   } catch (error) {

@@ -1,4 +1,4 @@
-import { can, formatClp, formatPercent, hasFeature, localDate, proposePeriod, type SettlementPeriod } from '@agenda/core';
+import { can, formatMoney, formatPercent, hasFeature, localDate, proposePeriod, type SettlementPeriod } from '@agenda/core';
 import {
   getEntitlements,
   listBusinessProfessionals,
@@ -43,14 +43,14 @@ export default async function CommissionsPage({ params }: { params: Promise<{ bu
     listCommissionEntries(db, { businessId: business.id, settlementId: null, limit: 200 }),
     listSettlements(db, business.id),
   ]);
-  const pendingTotal = pending.reduce((sum, e) => sum + e.amount_clp, 0);
+  const pendingTotal = pending.reduce((sum, e) => sum + e.amount, 0);
 
   const pendingCard = (
     <Card className="mt-6">
       <CardHeader>
         <CardTitle>Pendientes de liquidar</CardTitle>
         <CardDescription>
-          {pending.length === 0 ? 'No hay movimientos pendientes.' : `${pending.length} movimientos · ${formatClp(pendingTotal)}`}
+          {pending.length === 0 ? 'No hay movimientos pendientes.' : `${pending.length} movimientos · ${formatMoney(pendingTotal, business.currency)}`}
         </CardDescription>
       </CardHeader>
       {pending.length > 0 && (
@@ -69,7 +69,7 @@ export default async function CommissionsPage({ params }: { params: Promise<{ bu
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold tabular-nums">{formatClp(e.amount_clp)}</span>
+                  <span className="font-semibold tabular-nums">{formatMoney(e.amount, business.currency)}</span>
                   {manage && e.booking_item_id && (
                     <Link href={`${base}/reparto/${e.booking_item_id}`} className="text-xs underline">
                       Repartir
@@ -99,7 +99,7 @@ export default async function CommissionsPage({ params }: { params: Promise<{ bu
                 <Link href={`${base}/${s.id}`} className="flex items-center justify-between gap-2 py-2 hover:underline">
                   <span>{periodLabel(s)}</span>
                   <span className="flex items-center gap-2">
-                    {manage && <span className="tabular-nums">{formatClp(Number(s.total_clp))}</span>}
+                    {manage && <span className="tabular-nums">{formatMoney(Number(s.total), business.currency)}</span>}
                     <Badge variant={STATUS_VARIANT[s.status as keyof typeof STATUS_VARIANT]}>{SETTLEMENT_STATUS[s.status]}</Badge>
                   </span>
                 </Link>
@@ -176,7 +176,7 @@ export default async function CommissionsPage({ params }: { params: Promise<{ bu
                     {' · '}
                     {r.service_id ? serviceName.get(r.service_id) : 'todos los servicios'}
                     {' · '}
-                    {r.kind === 'percent' ? formatPercent(r.value) : `${formatClp(r.value)} fijo`}
+                    {r.kind === 'percent' ? formatPercent(r.value) : `${formatMoney(r.value, business.currency)} fijo`}
                     {r.include_addons && ' (con adicionales)'}
                   </span>
                   <ActionForm action={deactivateRuleAction} confirm="¿Quitar esta regla?">

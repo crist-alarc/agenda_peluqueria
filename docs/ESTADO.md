@@ -2,7 +2,7 @@
 
 > Documento vivo para retomar el trabajo en una sesión nueva sin perder contexto.
 > **Fuente de verdad:** `docs/DIRECTRICES.md` (v1.2, final según el dueño). Decisiones: `docs/adr/`.
-> Última actualización: 2026-11-11 (**Fase 2 programada completa**; traspaso a la Fase 3).
+> Última actualización: 2026-11-11 (**Fase 3 en curso**: entrevista cerrada, 3·0 país y moneda hecha; sigue la 3A).
 
 ## 1. Dónde estamos
 
@@ -14,7 +14,9 @@
 | 2B · Confirmación y portal | En `main` (PR #6, ADR 0003): botón "Confirmar" en el email, modo auto/email, `/mis-reservas` |
 | 2C · Emails y recordatorios | En `main` (PR #8, ADR 0004): email con `.ics`, recordatorio configurable, "Sin confirmar", registro de envíos, tarea programada |
 | 2D · Comisiones | Hecha (ADR 0005): reglas, reparto entre profesionales (receta o manual por % o minutos), ajustes, liquidaciones cerradas inmutables, Excel y PDF para teléfono |
-| 3 · MVP inflables | **Siguiente.** Ver sección 7 (traspaso) |
+| 3 · MVP inflables | **En curso.** Proceso documentado (`docs/proceso-inflables.md`); plan aprobado (ADR 0006, sección 7.5) |
+| 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. **Falta aplicar la migración en producción** (ver ADR 0006, sección 3) |
+| 3A · Catálogo de arriendo | **Siguiente** (aprobada) |
 
 **Quedó fuera de la Fase 2, a propósito:**
 
@@ -44,6 +46,11 @@
 10. (2026-11-11) **Planes:** se pueden crear negocios de prueba con distintos planes. Por ahora los negocios
     existentes tienen todo (plan `completo`) y los nuevos parten en el Plan Base.
 11. (2026-11-11) Las liquidaciones se exportan a **Excel y a PDF legible en el teléfono**.
+12. (2026-11-11) **País y moneda configurables por negocio**; los decimales dependen de la moneda (ADR 0006).
+    Por ahora solo Chile y CLP.
+13. (2026-11-11) Fase 3: zonas libres (no comunas), aviso (no bloqueo) por tope de camiones, precios
+    visibles u ocultos en el link público, acuerdos con cualquier negocio y cargo por servicio genérico.
+    Detalle en el ADR 0006, sección 2.
 
 ## 3. Tareas pendientes del dueño (fuera del código)
 
@@ -65,12 +72,12 @@
 
 | Qué | Valor |
 |---|---|
-| Repositorio | `crist-alarc/agenda_peluqueria`. Rama de trabajo de Claude: `claude/nifty-mayer-hcosy2`; cuando su PR se fusiona, se reinicia desde `main` |
+| Repositorio | `crist-alarc/agenda_peluqueria`. Rama de trabajo de Claude: `claude/modest-dirac-nxeqle`; cuando su PR se fusiona, se reinicia desde `main` |
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
-| Tests (2D) | core 74 · notifications 6 · base de datos 94 · Playwright 29 |
+| Migraciones | `20261115120000_phase3_currency` (**local, falta producción**), `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Tests (3·0) | core 76 · notifications 6 · base de datos 99 · Playwright 29 |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
 ### Mapa del código (dónde está cada cosa)
@@ -84,14 +91,16 @@
 | Recordatorios | `reminders.ts` | `repositories/bookings.ts` | `api/tareas/recordatorios`, `lib/notify.ts` |
 | Comisiones | `commissions.ts` | `repositories/commissions.ts` | `panel/[businessId]/comisiones/*`, `lib/commissions.ts`, `lib/settlement-report.ts` |
 | Emails | — | — | `packages/notifications` (`email.ts`, `templates.ts`, `ics.ts`) |
-| Validación de formularios | `schemas.ts` (Zod) | — | Server Actions en cada carpeta |
+| Dinero (moneda del negocio) | `money.ts` (`formatMoney`, `parseMoney`) | — | Configuración |
+| Validación de formularios | `schemas.ts` (Zod; los esquemas con montos reciben la moneda) | — | Server Actions en cada carpeta |
 
 ## 5. Cómo trabaja Claude en este repo (notas técnicas)
 
 - Antes de cada push: `pnpm typecheck`, `pnpm test`, `pnpm test:db` y, si cambia la interfaz, las pruebas
   de punta a punta (e2e).
 - `pnpm test:db` necesita PostgreSQL local en `localhost:5432` (usuario y clave `postgres`). Si la sesión se
-  reinicia: `service postgresql start`. Los archivos de test corren en paralelo; los roles se crean sin
+  reinicia: `service postgresql start`; en un contenedor nuevo, además:
+  `su postgres -c "psql -c \"alter user postgres password 'postgres'\""`. Los archivos de test corren en paralelo; los roles se crean sin
   carrera (PR #7).
 - **Migraciones:**
   1. Probar primero con `pnpm test:db`.
@@ -137,7 +146,10 @@
   created desc limit 3;`. Si vuelve a dar 401, el `CRON_SECRET` de Vercel y el de los secretos de la Edge
   Function no coinciden; si da 503, falta en Vercel. Después de cambiarlo hay que volver a publicar en Vercel.
 
-## 7. Traspaso a la Fase 3 · MVP inflables (piloto de los hermanos)
+## 7. Fase 3 · MVP inflables (piloto de los hermanos)
+
+> **Estado:** entrevista hecha (`docs/proceso-inflables.md`), decisiones en el ADR 0006, 3·0 hecha.
+> Lo que sigue de esta sección es el traspaso original; la 7.5 es el plan aprobado.
 
 **Objetivo (sección 24):** los hermanos registran en la app sus arriendos y sus colaboraciones.
 
@@ -215,9 +227,20 @@ conversación (el resultado se guarda en `docs/proceso-inflables.md`):
 - ¿Cada hermano tendrá su propia cuenta y su propio negocio en la app? (Así lo suponen las directrices.)
 - Nombre de la app y dominio (pendiente desde la Fase 1).
 
-### 7.5 Propuesta de entregas (presentar el plan y esperar aprobación antes de programar)
+### 7.5 Entregas (plan aprobado el 2026-11-11)
 
-1. **3A · Catálogo `rental`:**
+0. **3·0 · País y moneda** (hecha, ADR 0006).
+1. **3A · Catálogo `rental`** (aprobada; detalle acordado):
+   - ficha de cada juego como un servicio con datos del rubro (capacidad, dimensiones, armado, desarme,
+     electricidad), fotos en Supabase Storage y unidades por etiqueta;
+   - bloque por servicio: día completo o bloques de N horas (toro mecánico: 3 h + operador);
+   - margen de traslado por servicio, ajustable por reserva;
+   - zonas de despacho libres por sucursal, con costo (incluido, fijo o por zona);
+   - tope de eventos por día por camión, con aviso;
+   - precios visibles u ocultos en el link público;
+   - catálogo tipo tienda en `/r/<slug>`.
+
+   Lo que seguía en la propuesta original:
    - plantilla del rubro;
    - bloques;
    - montaje y desmontaje;

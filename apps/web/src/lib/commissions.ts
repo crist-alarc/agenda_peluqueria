@@ -22,12 +22,12 @@ export async function generateBookingCommissions(service: DbClient, bookingId: s
     .map((item) => ({
       bookingItemId: item.bookingItemId,
       serviceId: item.serviceId,
-      priceClp: item.priceClp,
+      price: item.price,
       shares: item.manualShares.length > 0 ? item.manualShares : defaultShares(item.participants, item.recipe),
     }))
     // Servicios sin profesional (ej. solo una sala) no generan comisión
     .filter((item) => item.shares.length > 0);
-  const lines = computeBookingCommissions(items, data.addonsTotalClp, data.rules);
+  const lines = computeBookingCommissions(items, data.addonsTotal, data.rules);
   await replaceBookingCommissions(service, bookingId, lines);
   return 'saved';
 }

@@ -3,7 +3,7 @@ import {
   attendanceState,
   can,
   dayRange,
-  formatClp,
+  formatMoney,
   isIsoDate,
   localDate,
   localTime,
@@ -64,7 +64,7 @@ export default async function AgendaPage({
       now,
     );
   const card = (b: AgendaBooking) => (
-    <BookingCard key={b.id} booking={b} tz={tz} businessId={business.id} manage={manage} attendance={attendanceOf(b)} />
+    <BookingCard key={b.id} booking={b} tz={tz} currency={business.currency} businessId={business.id} manage={manage} attendance={attendanceOf(b)} />
   );
   const unconfirmed = dayBookings.filter((b) => attendanceOf(b) === 'unconfirmed').length;
   const qs = (d: string, extra = '') => `${base}?fecha=${d}&sucursal=${branch.id}${extra}`;
@@ -93,11 +93,11 @@ export default async function AgendaPage({
                 id: s.id,
                 name: s.name,
                 durationMinutes: s.duration_minutes,
-                priceLabel: formatClp(s.price_clp),
+                priceLabel: formatMoney(s.price, business.currency),
                 needsPerson: s.service_resource_requirements.some((q) => q.resource_type === 'person'),
               }))}
             people={people.map((p) => ({ id: p.id, name: p.name, branchId: p.branch_id }))}
-            addons={addons.filter((a) => a.active).map((a) => ({ id: a.id, name: a.name, priceLabel: formatClp(a.price_clp) }))}
+            addons={addons.filter((a) => a.active).map((a) => ({ id: a.id, name: a.name, priceLabel: formatMoney(a.price, business.currency) }))}
             dates={wizardDates(tz, 30)}
             initialDate={date >= today ? date : today}
             getSlots={getReceptionSlots}
@@ -204,12 +204,14 @@ const ATTENDANCE = {
 function BookingCard({
   booking: b,
   tz,
+  currency,
   businessId,
   manage,
   attendance,
 }: {
   booking: AgendaBooking;
   tz: string;
+  currency: string;
   businessId: string;
   manage: boolean;
   attendance: AttendanceState | null;
@@ -257,7 +259,7 @@ function BookingCard({
         </p>
         <p className="flex justify-between text-xs text-muted-foreground">
           <span>{t.bookingChannels[b.channel]}</span>
-          <span className="tabular-nums">{formatClp(b.total_clp)}</span>
+          <span className="tabular-nums">{formatMoney(b.total, currency)}</span>
         </p>
         {b.notes && <p className="rounded bg-muted px-2 py-1 text-xs">{b.notes}</p>}
         {manage && nextStatuses(b.status).length > 0 && (

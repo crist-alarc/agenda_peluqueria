@@ -1,4 +1,4 @@
-import { can, formatClp } from '@agenda/core';
+import { can, formatMoney, moneyInputHint, moneyInputValue } from '@agenda/core';
 import { listServices, type Service } from '@agenda/db';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Checkbox, EmptyState, Field, Input, PageHeader, Textarea } from '@agenda/ui';
 import { ActionForm, SubmitButton } from '@/components/action-form';
@@ -29,7 +29,7 @@ export default async function ServicesPage({ params }: { params: Promise<{ busin
               <CardTitle>Nuevo servicio</CardTitle>
             </summary>
             <CardContent>
-              <ServiceForm businessId={business.id} />
+              <ServiceForm businessId={business.id} currency={business.currency} />
             </CardContent>
           </details>
         </Card>
@@ -46,13 +46,13 @@ export default async function ServicesPage({ params }: { params: Promise<{ busin
                   <span className="font-medium">{s.name}</span>
                   {!s.active && <Badge variant="muted">Inactivo</Badge>}
                   <span className="ml-auto text-sm tabular-nums text-muted-foreground">
-                    {s.duration_minutes} min · {formatClp(s.price_clp)}
+                    {s.duration_minutes} min · {formatMoney(s.price, business.currency)}
                   </span>
                 </summary>
                 <div className="border-t p-4">
                   {editable ? (
                     <>
-                      <ServiceForm businessId={business.id} service={s} />
+                      <ServiceForm businessId={business.id} currency={business.currency} service={s} />
                       <ActionForm action={deleteServiceAction} confirm={`¿Eliminar ${s.name}?`} className="mt-4 border-t pt-4">
                         <input type="hidden" name="businessId" value={business.id} />
                         <input type="hidden" name="serviceId" value={s.id} />
@@ -93,7 +93,7 @@ function ServiceSummary({ service: s }: { service: Service }) {
   );
 }
 
-function ServiceForm({ businessId, service }: { businessId: string; service?: Service }) {
+function ServiceForm({ businessId, currency, service }: { businessId: string; currency: string; service?: Service }) {
   return (
     <ActionForm action={saveServiceAction} className="grid gap-4 sm:grid-cols-2" resetOnSuccess={!service}>
       <input type="hidden" name="businessId" value={businessId} />
@@ -101,8 +101,8 @@ function ServiceForm({ businessId, service }: { businessId: string; service?: Se
       <Field label="Nombre">
         <Input name="name" defaultValue={service?.name} required />
       </Field>
-      <Field label="Precio (CLP)" hint="Pesos enteros, ej. 12000">
-        <Input name="priceClp" inputMode="numeric" defaultValue={service?.price_clp ?? ''} required />
+      <Field label={`Precio (${currency})`} hint={moneyInputHint(currency)}>
+        <Input name="price" inputMode="numeric" defaultValue={service ? moneyInputValue(service.price, currency) : ''} required />
       </Field>
       <Field label="Duración (minutos)">
         <Input name="durationMinutes" type="number" min={5} step={5} defaultValue={service?.duration_minutes ?? 30} required />

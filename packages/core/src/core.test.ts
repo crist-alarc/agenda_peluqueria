@@ -6,10 +6,13 @@ import {
   canManageBranch,
   checkLimit,
   findOverlaps,
-  formatClp,
+  formatMoney,
+  CURRENCY_CODES,
+  InvalidAmountError,
+  moneyInputValue,
   hasFeature,
   memberSchema,
-  parseClp,
+  parseMoney,
   serviceSchema,
   utcToZonedLocal,
   weeklyHoursSchema,
@@ -92,26 +95,49 @@ describe('derechos del plan', () => {
   });
 });
 
-describe('montos en CLP enteros', () => {
-  it('acepta formatos chilenos comunes', () => {
-    expect(parseClp('12000')).toBe(12000);
-    expect(parseClp('$12.000')).toBe(12000);
-    expect(parseClp('1.250.000')).toBe(1250000);
-    expect(parseClp(0)).toBe(0);
+describe('montos por moneda', () => {
+  // Moneda de prueba con decimales: demuestra que la unidad mínima funciona aunque hoy solo se use CLP.
+  const usd = { code: 'USD', name: 'Dólar', minorUnits: 2, locale: 'en-US' };
+
+  it('CLP: acepta formatos chilenos comunes', () => {
+    expect(parseMoney('12000', 'CLP')).toBe(12000);
+    expect(parseMoney('$12.000', 'CLP')).toBe(12000);
+    expect(parseMoney('1.250.000', 'CLP')).toBe(1250000);
+    expect(parseMoney(0, 'CLP')).toBe(0);
   });
 
-  it('rechaza decimales, negativos y texto', () => {
-    expect(() => parseClp('12000,50')).toThrow();
-    expect(() => parseClp('12.5')).toThrow();
-    expect(() => parseClp(-1)).toThrow();
-    expect(() => parseClp(10.5)).toThrow();
-    expect(() => parseClp('doce mil')).toThrow();
+  it('CLP: rechaza decimales, negativos y texto', () => {
+    expect(() => parseMoney('12000,50', 'CLP')).toThrow(InvalidAmountError);
+    expect(() => parseMoney('12.5', 'CLP')).toThrow(InvalidAmountError);
+    expect(() => parseMoney(-1, 'CLP')).toThrow(InvalidAmountError);
+    expect(() => parseMoney(10.5, 'CLP')).toThrow(InvalidAmountError);
+    expect(() => parseMoney('doce mil', 'CLP')).toThrow(InvalidAmountError);
   });
 
-  it('formatea con separador de miles', () => {
-    expect(formatClp(12000)).toBe('$12.000');
-    expect(formatClp(1250000)).toBe('$1.250.000');
-    expect(formatClp(0)).toBe('$0');
+  it('CLP: formatea con separador de miles y sin decimales', () => {
+    expect(formatMoney(12000, 'CLP')).toBe('$12.000');
+    expect(formatMoney(1250000, 'CLP')).toBe('$1.250.000');
+    expect(formatMoney(0, 'CLP')).toBe('$0');
+    expect(formatMoney(-3500, 'CLP')).toBe('-$3.500');
+    expect(moneyInputValue(15000, 'CLP')).toBe('15000');
+  });
+
+  it('moneda con decimales: guarda enteros en la unidad mínima (centavos)', () => {
+    expect(parseMoney('12.5', usd)).toBe(1250);
+    expect(parseMoney('$1,234.56', usd)).toBe(123456);
+    expect(parseMoney('7', usd)).toBe(700);
+    expect(parseMoney(19.99, usd)).toBe(1999);
+    expect(() => parseMoney('1.234', usd)).toThrow(InvalidAmountError);
+    expect(() => parseMoney(0.001, usd)).toThrow(InvalidAmountError);
+    expect(formatMoney(1250, usd)).toBe('$12.50');
+    expect(formatMoney(-123456, usd)).toBe('-$1,234.56');
+    expect(moneyInputValue(123456, usd)).toBe('1234.56');
+    expect(parseMoney(moneyInputValue(123456, usd), usd)).toBe(123456);
+  });
+
+  it('rechaza monedas no habilitadas', () => {
+    expect(() => formatMoney(100, 'XYZ')).toThrow();
+    expect(CURRENCY_CODES).toEqual(['CLP']);
   });
 });
 
@@ -178,26 +204,26 @@ describe('zona horaria y horario de verano (America/Santiago)', () => {
 
 describe('validación de entradas', () => {
   it('servicio: precio en enteros CLP y requisitos', () => {
-    const parsed = serviceSchema.parse({
+    const parsed = serviceSchema('CLP').parse({
       businessId: BUSINESS,
       name: '  Corte + barba ',
       durationMinutes: '45',
-      priceClp: '$15.000',
+      price: '$15.000',
       active: 'on',
       requirements: [{ resourceType: 'person', quantity: '1', requiredSkill: ' Barberia ' }],
     });
     expect(parsed).toMatchObject({
       name: 'Corte + barba',
       durationMinutes: 45,
-      priceClp: 15000,
+      price: 15000,
       bufferBeforeMinutes: 0,
       active: true,
       requirements: [{ resourceType: 'person', quantity: 1, requiredSkill: 'barberia' }],
     });
-    expect(serviceSchema.safeParse({ businessId: BUSINESS, name: 'X', durationMinutes: 30, priceClp: '15000,5' }).success).toBe(
+    expect(serviceSchema('CLP').safeParse({ businessId: BUSINESS, name: 'X', durationMinutes: 30, price: '15000,5' }).success).toBe(
       false,
     );
-    expect(serviceSchema.safeParse({ businessId: BUSINESS, name: 'X', durationMinutes: 2, priceClp: 0 }).success).toBe(false);
+    expect(serviceSchema('CLP').safeParse({ businessId: BUSINESS, name: 'X', durationMinutes: 2, price: 0 }).success).toBe(false);
   });
 
   it('stock no negativo y entero', () => {

@@ -1,4 +1,4 @@
-import { formatClp, formatPercent, localDate, localTime } from '@agenda/core';
+import { formatMoney, formatPercent, localDate, localTime } from '@agenda/core';
 import { getBookingItemForShares, listBusinessProfessionals, listCommissionEntries, listItemShares } from '@agenda/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, PageHeader, Select } from '@agenda/ui';
 import Link from 'next/link';
@@ -41,7 +41,7 @@ export default async function SharesPage({ params }: { params: Promise<{ busines
     <>
       <PageHeader
         title="Repartir comisión"
-        description={`${item.service_name} · ${localDate(item.starts_at, business.timezone)} ${localTime(item.starts_at, business.timezone)} · ${formatClp(item.price_clp)}`}
+        description={`${item.service_name} · ${localDate(item.starts_at, business.timezone)} ${localTime(item.starts_at, business.timezone)} · ${formatMoney(item.price, business.currency)}`}
       />
       <Card className="max-w-2xl">
         <CardHeader>
@@ -50,7 +50,7 @@ export default async function SharesPage({ params }: { params: Promise<{ busines
             Indica el porcentaje de cada persona (debe sumar 100%) o los minutos que trabajó cada una y la app calcula el
             porcentaje. Deja en blanco a quien no participó.
             {current.length > 0 &&
-              ` Hoy: ${current.map((e) => `${e.professional?.display_name} ${formatPercent(e.share_bp ?? 10000)} = ${formatClp(e.amount_clp)}`).join(' · ')}.`}
+              ` Hoy: ${current.map((e) => `${e.professional?.display_name} ${formatPercent(e.share_bp ?? 10000)} = ${formatMoney(e.amount, business.currency)}`).join(' · ')}.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

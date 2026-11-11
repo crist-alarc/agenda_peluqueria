@@ -1,5 +1,5 @@
 import 'server-only';
-import { bookingEmailAsksAttendance, cutoffAt, formatClp, shouldSendReminder, type ReminderSettings } from '@agenda/core';
+import { bookingEmailAsksAttendance, cutoffAt, formatMoney, shouldSendReminder, type ReminderSettings } from '@agenda/core';
 import {
   claimReminder,
   createBookingToken,
@@ -41,7 +41,7 @@ function common(b: BookingEmailData) {
     customerName: (b.customerName ?? '').split(' ')[0] || 'hola',
     when: formatDateTime(b.startsAt, b.timezone),
     services: b.services ?? [],
-    total: formatClp(b.totalClp),
+    total: formatMoney(b.total, b.currency),
     place: [b.branchName, b.branchAddress].filter(Boolean).join(' · ') || null,
     cancellationHours: b.settings.cancellationHours,
   };

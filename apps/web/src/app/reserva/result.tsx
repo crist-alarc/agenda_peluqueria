@@ -1,5 +1,5 @@
 import type { TokenResult } from '@agenda/db';
-import { formatClp } from '@agenda/core';
+import { formatMoney } from '@agenda/core';
 import { Card, CardContent } from '@agenda/ui';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -31,7 +31,7 @@ export function TokenResultCard({ result, children }: { result: TokenResult; chi
               <p className="font-medium">{b.businessName}</p>
               <p>{b.services.join(' + ')}</p>
               <p>{formatDateTime(b.startsAt, b.timezone)}</p>
-              <p className="text-muted-foreground">{formatClp(b.totalClp)}</p>
+              <p className="text-muted-foreground">{formatMoney(b.total, b.currency)}</p>
             </div>
           )}
           {b?.businessSlug && (result.result === 'cancelled' || result.result === 'expired') && (

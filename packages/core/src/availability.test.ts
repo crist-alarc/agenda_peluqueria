@@ -192,8 +192,8 @@ describe('reglas de reservas', () => {
   });
 
   it('total en CLP enteros', () => {
-    expect(bookingTotal([{ priceClp: 12000 }, { priceClp: 2000, quantity: 2 }])).toBe(16000);
-    expect(() => bookingTotal([{ priceClp: 10.5 }])).toThrow();
+    expect(bookingTotal([{ price: 12000 }, { price: 2000, quantity: 2 }])).toBe(16000);
+    expect(() => bookingTotal([{ price: 10.5 }])).toThrow();
   });
 
   it('normaliza teléfonos chilenos', () => {

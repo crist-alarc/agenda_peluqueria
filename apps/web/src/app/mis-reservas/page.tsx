@@ -1,4 +1,4 @@
-import { customerCanCancel, formatClp } from '@agenda/core';
+import { customerCanCancel, formatMoney } from '@agenda/core';
 import { listMyBookings } from '@agenda/db';
 import { Badge, Button, Card, CardContent, EmptyState, PageHeader } from '@agenda/ui';
 import Link from 'next/link';
@@ -53,7 +53,7 @@ export default async function MyBookingsPage() {
                           </div>
                           <p>{b.services.join(' + ')}</p>
                           <p className="text-muted-foreground">
-                            {formatDateTime(b.startsAt, b.timezone)} · {formatClp(b.totalClp)}
+                            {formatDateTime(b.startsAt, b.timezone)} · {formatMoney(b.total, b.currency)}
                           </p>
                           {cancellable &&
                             (customerCanCancel(b.startsAt, now, b.cancellationHours) ? (

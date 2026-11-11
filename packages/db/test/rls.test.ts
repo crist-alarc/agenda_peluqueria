@@ -140,13 +140,13 @@ describe('aislamiento entre negocios', () => {
   });
 
   it('B no puede modificar ni borrar datos de A', async () => {
-    const updated = await ownerB.query(`update public.services set price_clp = 1 where business_id = $1 returning id`, [
+    const updated = await ownerB.query(`update public.services set price = 1 where business_id = $1 returning id`, [
       businessA,
     ]);
     expect(updated).toHaveLength(0);
     const deleted = await ownerB.query(`delete from public.branches where id = $1 returning id`, [branchA]);
     expect(deleted).toHaveLength(0);
-    expect(await count(ownerA, 'services', 'price_clp = 1')).toBe(0);
+    expect(await count(ownerA, 'services', 'price = 1')).toBe(0);
   });
 
   it('B no puede insertar datos en el negocio de A', async () => {
@@ -195,7 +195,7 @@ describe('aislamiento entre negocios', () => {
 describe('roles dentro del negocio', () => {
   it('la recepcionista ve el catálogo pero no puede modificarlo', async () => {
     expect(await count(receptionistA, 'services')).toBe(4);
-    const updated = await receptionistA.query(`update public.services set price_clp = 1 returning id`);
+    const updated = await receptionistA.query(`update public.services set price = 1 returning id`);
     expect(updated).toHaveLength(0);
     await expect(
       receptionistA.query(
@@ -216,7 +216,7 @@ describe('roles dentro del negocio', () => {
     expect(updated).toHaveLength(1);
     const notBusiness = await branchAdminA.query(`update public.businesses set name = 'Otro' returning id`);
     expect(notBusiness).toHaveLength(0);
-    const notService = await branchAdminA.query(`update public.services set price_clp = 1 returning id`);
+    const notService = await branchAdminA.query(`update public.services set price = 1 returning id`);
     expect(notService).toHaveLength(0);
   });
 
@@ -324,9 +324,9 @@ describe('planes y derechos', () => {
 describe('auditoría', () => {
   it('registra quién cambió un precio, con valores antes y después', async () => {
     const [service] = await ownerA.query<{ id: string }>(`select id from public.services where name = 'Tinte'`);
-    await ownerA.query(`update public.services set price_clp = 38000 where id = $1`, [service!.id]);
+    await ownerA.query(`update public.services set price = 38000 where id = $1`, [service!.id]);
     const [log] = await ownerA.query<{ actor_user_id: string; old_price: number; new_price: number; action: string }>(
-      `select actor_user_id, action, (old_data ->> 'price_clp')::int as old_price, (new_data ->> 'price_clp')::int as new_price
+      `select actor_user_id, action, (old_data ->> 'price')::int as old_price, (new_data ->> 'price')::int as new_price
        from public.audit_log where table_name = 'services' and record_id = $1 and action = 'update'`,
       [service!.id],
     );

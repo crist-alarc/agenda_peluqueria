@@ -32,7 +32,7 @@ function serviceValues(input: ServiceInput) {
     name: input.name,
     description: input.description,
     duration_minutes: input.durationMinutes,
-    price_clp: input.priceClp,
+    price: input.price,
     buffer_before_minutes: input.bufferBeforeMinutes,
     buffer_after_minutes: input.bufferAfterMinutes,
     active: input.active,
@@ -94,7 +94,7 @@ export async function listAddons(db: DbClient, businessId: string): Promise<Addo
 
 export async function createAddon(
   db: DbClient,
-  values: { business_id: string; name: string; description: string | null; price_clp: number; active: boolean },
+  values: { business_id: string; name: string; description: string | null; price: number; active: boolean },
 ): Promise<void> {
   assertOk(await db.from('addons').insert(values));
 }
@@ -102,7 +102,7 @@ export async function createAddon(
 export async function updateAddon(
   db: DbClient,
   addonId: string,
-  values: { name: string; description: string | null; price_clp: number; active: boolean },
+  values: { name: string; description: string | null; price: number; active: boolean },
 ): Promise<void> {
   expectRows(unwrap(await db.from('addons').update(values).eq('id', addonId).select('id')));
 }

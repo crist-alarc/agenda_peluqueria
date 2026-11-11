@@ -105,7 +105,7 @@ export function defaultShares(participants: readonly Participant[], recipe: read
 export type CommissionItem = {
   bookingItemId: string;
   serviceId: string;
-  priceClp: number;
+  price: number;
   shares: readonly Share[];
 };
 
@@ -118,29 +118,29 @@ export type CommissionLine = {
   ruleValue: number | null;
   shareBp: number;
   /** Parte del precio del servicio que le corresponde. */
-  baseClp: number;
+  baseAmount: number;
   /** Parte de los adicionales que le corresponde (0 si la regla no los incluye). */
-  addonBaseClp: number;
-  amountClp: number;
+  addonBaseAmount: number;
+  amount: number;
 };
 
 /** Comisiones de una reserva completada: una línea por persona y servicio. */
 export function computeBookingCommissions(
   items: readonly CommissionItem[],
-  addonsTotalClp: number,
+  addonsTotal: number,
   rules: readonly CommissionRule[],
 ): CommissionLine[] {
-  const itemsTotal = items.reduce((sum, i) => sum + i.priceClp, 0);
+  const itemsTotal = items.reduce((sum, i) => sum + i.price, 0);
   const lines: CommissionLine[] = [];
   for (const item of items) {
     const error = validateShares(item.shares);
     if (error) throw new CommissionError(error);
     // Adicionales de la reserva repartidos entre servicios según su precio
     const itemAddons =
-      itemsTotal > 0 ? (addonsTotalClp * item.priceClp) / itemsTotal : addonsTotalClp / Math.max(items.length, 1);
+      itemsTotal > 0 ? (addonsTotal * item.price) / itemsTotal : addonsTotal / Math.max(items.length, 1);
     for (const share of item.shares) {
       const rule = findRule(rules, share.professionalId, item.serviceId);
-      const base = (item.priceClp * share.shareBp) / FULL_SHARE;
+      const base = (item.price * share.shareBp) / FULL_SHARE;
       const addonBase = rule?.includeAddons && rule.kind === 'percent' ? (itemAddons * share.shareBp) / FULL_SHARE : 0;
       let amount = 0;
       if (rule?.kind === 'percent') amount = ((base + addonBase) * rule.value) / FULL_SHARE;
@@ -153,9 +153,9 @@ export function computeBookingCommissions(
         ruleKind: rule?.kind ?? null,
         ruleValue: rule?.value ?? null,
         shareBp: share.shareBp,
-        baseClp: Math.round(base),
-        addonBaseClp: Math.round(addonBase),
-        amountClp: Math.round(amount),
+        baseAmount: Math.round(base),
+        addonBaseAmount: Math.round(addonBase),
+        amount: Math.round(amount),
       });
     }
   }
@@ -166,12 +166,12 @@ export type SettlementEntry = {
   professionalId: string;
   professionalName: string;
   kind: 'service' | 'adjustment';
-  amountClp: number;
+  amount: number;
 };
 
 export type SettlementSummary = {
-  totalClp: number;
-  people: Array<{ professionalId: string; name: string; servicesClp: number; adjustmentsClp: number; totalClp: number; count: number }>;
+  total: number;
+  people: Array<{ professionalId: string; name: string; servicesTotal: number; adjustmentsTotal: number; total: number; count: number }>;
 };
 
 /** Totales por persona de una liquidación (ordenados por nombre). */
@@ -181,20 +181,20 @@ export function summarizeSettlement(entries: readonly SettlementEntry[]): Settle
     const p = map.get(e.professionalId) ?? {
       professionalId: e.professionalId,
       name: e.professionalName,
-      servicesClp: 0,
-      adjustmentsClp: 0,
-      totalClp: 0,
+      servicesTotal: 0,
+      adjustmentsTotal: 0,
+      total: 0,
       count: 0,
     };
     if (e.kind === 'service') {
-      p.servicesClp += e.amountClp;
+      p.servicesTotal += e.amount;
       p.count += 1;
-    } else p.adjustmentsClp += e.amountClp;
-    p.totalClp += e.amountClp;
+    } else p.adjustmentsTotal += e.amount;
+    p.total += e.amount;
     map.set(e.professionalId, p);
   }
   const people = [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'));
-  return { totalClp: people.reduce((sum, p) => sum + p.totalClp, 0), people };
+  return { total: people.reduce((sum, p) => sum + p.total, 0), people };
 }
 
 export const SETTLEMENT_PERIODS = ['weekly', 'biweekly', 'monthly'] as const;

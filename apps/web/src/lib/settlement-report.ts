@@ -1,5 +1,5 @@
 import 'server-only';
-import { formatClp, formatPercent, localDate, localTime, summarizeSettlement, type SettlementSummary } from '@agenda/core';
+import { currencyInfo, formatMoney, formatPercent, localDate, localTime, summarizeSettlement, type SettlementSummary } from '@agenda/core';
 import { getSettlement, listCommissionEntries, type DbClient, type SettlementRow } from '@agenda/db';
 import ExcelJS from 'exceljs';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
@@ -17,16 +17,17 @@ export type ReportLine = {
   time: string;
   service: string;
   customer: string;
-  baseClp: number;
+  baseAmount: number;
   share: string;
   rule: string;
-  amountClp: number;
+  amount: number;
   kind: 'service' | 'adjustment';
   note: string;
 };
 
 export type SettlementReport = {
   businessName: string;
+  currency: string;
   settlement: SettlementRow;
   periodLabel: string;
   statusLabel: string;
@@ -47,7 +48,7 @@ export function periodLabel(s: Pick<SettlementRow, 'period_start' | 'period_end'
 
 export async function loadSettlementReport(
   db: DbClient,
-  business: { id: string; name: string; timezone: string },
+  business: { id: string; name: string; timezone: string; currency: string },
   settlementId: string,
 ): Promise<SettlementReport | null> {
   const settlement = await getSettlement(db, settlementId);
@@ -61,19 +62,20 @@ export async function loadSettlementReport(
       time: localTime(e.occurred_at, business.timezone),
       service: e.kind === 'adjustment' ? 'Ajuste' : (e.booking_item?.service_name ?? 'Servicio'),
       customer: e.booking?.customer?.full_name ?? '',
-      baseClp: e.base_clp + e.addon_base_clp,
+      baseAmount: e.base_amount + e.addon_base_amount,
       share: e.share_bp ? formatPercent(e.share_bp) : '',
-      rule: e.rule_kind === 'percent' ? formatPercent(e.rule_value ?? 0) : e.rule_kind === 'fixed' ? `${formatClp(e.rule_value ?? 0)} fijo` : '',
-      amountClp: e.amount_clp,
+      rule: e.rule_kind === 'percent' ? formatPercent(e.rule_value ?? 0) : e.rule_kind === 'fixed' ? `${formatMoney(e.rule_value ?? 0, business.currency)} fijo` : '',
+      amount: e.amount,
       kind: e.kind as 'service' | 'adjustment',
       note: e.note ?? '',
     }))
     .sort((a, b) => a.person.localeCompare(b.person, 'es') || `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
   const summary = summarizeSettlement(
-    lines.map((l) => ({ professionalId: l.professionalId, professionalName: l.person, kind: l.kind, amountClp: l.amountClp })),
+    lines.map((l) => ({ professionalId: l.professionalId, professionalName: l.person, kind: l.kind, amount: l.amount })),
   );
   return {
     businessName: business.name,
+    currency: business.currency,
     settlement,
     periodLabel: periodLabel(settlement),
     statusLabel: SETTLEMENT_STATUS[settlement.status] ?? settlement.status,
@@ -92,7 +94,11 @@ export function reportFileName(r: SettlementReport, ext: 'xlsx' | 'pdf'): string
 export async function settlementXlsx(r: SettlementReport): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = r.businessName;
-  const money = '"$"#,##0;-"$"#,##0';
+  // Las celdas llevan el monto en unidades de la moneda (no en su unidad mínima) para poder sumarlas en Excel.
+  const { minorUnits } = currencyInfo(r.currency);
+  const digits = minorUnits > 0 ? `.${'0'.repeat(minorUnits)}` : '';
+  const money = `"$"#,##0${digits};-"$"#,##0${digits}`;
+  const cell = (amount: number) => amount / 10 ** minorUnits;
 
   const resumen = wb.addWorksheet('Resumen');
   resumen.addRow([`Liquidación de comisiones · ${r.businessName}`]).font = { bold: true, size: 14 };
@@ -101,8 +107,8 @@ export async function settlementXlsx(r: SettlementReport): Promise<Buffer> {
   resumen.addRow([]);
   const head = resumen.addRow(['Persona', 'Servicios', 'Comisión servicios', 'Ajustes', 'Total a pagar']);
   head.font = { bold: true };
-  for (const p of r.summary.people) resumen.addRow([p.name, p.count, p.servicesClp, p.adjustmentsClp, p.totalClp]);
-  const total = resumen.addRow(['Total', '', '', '', r.summary.totalClp]);
+  for (const p of r.summary.people) resumen.addRow([p.name, p.count, cell(p.servicesTotal), cell(p.adjustmentsTotal), cell(p.total)]);
+  const total = resumen.addRow(['Total', '', '', '', cell(r.summary.total)]);
   total.font = { bold: true };
   resumen.columns = [{ width: 28 }, { width: 11 }, { width: 20 }, { width: 14 }, { width: 16 }];
   for (const c of [3, 4, 5]) resumen.getColumn(c).numFmt = money;
@@ -111,7 +117,7 @@ export async function settlementXlsx(r: SettlementReport): Promise<Buffer> {
   const h = detalle.addRow(['Persona', 'Fecha', 'Hora', 'Servicio', 'Cliente', 'Base', 'Parte', 'Regla', 'Comisión', 'Nota']);
   h.font = { bold: true };
   for (const l of r.lines) {
-    detalle.addRow([l.person, l.date, l.time, l.service, l.customer, l.kind === 'service' ? l.baseClp : null, l.share, l.rule, l.amountClp, l.note]);
+    detalle.addRow([l.person, l.date, l.time, l.service, l.customer, l.kind === 'service' ? cell(l.baseAmount) : null, l.share, l.rule, cell(l.amount), l.note]);
   }
   detalle.columns = [{ width: 22 }, { width: 12 }, { width: 7 }, { width: 24 }, { width: 22 }, { width: 12 }, { width: 8 }, { width: 14 }, { width: 12 }, { width: 36 }];
   for (const c of [6, 9]) detalle.getColumn(c).numFmt = money;
@@ -171,7 +177,7 @@ export async function settlementPdf(r: SettlementReport): Promise<Uint8Array> {
   y -= 30;
   text('Total a pagar', { size: 12, color: MUTED });
   y -= 26;
-  text(formatClp(r.summary.totalClp), { size: 26, font: bold });
+  text(formatMoney(r.summary.total, r.currency), { size: 26, font: bold });
   y -= 18;
   rule();
   y -= 22;
@@ -179,10 +185,10 @@ export async function settlementPdf(r: SettlementReport): Promise<Uint8Array> {
   for (const p of r.summary.people) {
     ensure(70);
     text(p.name, { size: 15, font: bold, max: width - 110 });
-    text(formatClp(p.totalClp), { size: 15, font: bold, right: true });
+    text(formatMoney(p.total, r.currency), { size: 15, font: bold, right: true });
     y -= 17;
-    const parts = [`${p.count} ${p.count === 1 ? 'servicio' : 'servicios'}: ${formatClp(p.servicesClp)}`];
-    if (p.adjustmentsClp !== 0) parts.push(`ajustes: ${formatClp(p.adjustmentsClp)}`);
+    const parts = [`${p.count} ${p.count === 1 ? 'servicio' : 'servicios'}: ${formatMoney(p.servicesTotal, r.currency)}`];
+    if (p.adjustmentsTotal !== 0) parts.push(`ajustes: ${formatMoney(p.adjustmentsTotal, r.currency)}`);
     text(parts.join(' · '), { size: 11, color: MUTED });
     y -= 18;
 
@@ -192,10 +198,10 @@ export async function settlementPdf(r: SettlementReport): Promise<Uint8Array> {
         .format(new Date(`${l.date}T12:00:00Z`))
         .replace('.', '');
       text(l.kind === 'adjustment' ? `Ajuste · ${day}` : `${day} ${l.time} · ${l.service}`, { size: 12, max: width - 90 });
-      text(formatClp(l.amountClp), { size: 12, font: bold, right: true });
+      text(formatMoney(l.amount, r.currency), { size: 12, font: bold, right: true });
       y -= 15;
       const detail =
-        l.kind === 'adjustment' ? l.note : [l.customer, `base ${formatClp(l.baseClp)}`, l.share !== '100%' ? l.share : '', l.rule].filter(Boolean).join(' · ');
+        l.kind === 'adjustment' ? l.note : [l.customer, `base ${formatMoney(l.baseAmount, r.currency)}`, l.share !== '100%' ? l.share : '', l.rule].filter(Boolean).join(' · ');
       text(detail, { size: 10, color: MUTED });
       y -= 18;
     }

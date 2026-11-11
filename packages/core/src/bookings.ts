@@ -1,6 +1,6 @@
 /**
  * Reglas de reservas (directrices, sección 9): estados, transiciones,
- * política de cancelación y totales en CLP enteros.
+ * política de cancelación y totales enteros en la unidad mínima de la moneda.
  */
 import type { Role } from './roles';
 
@@ -45,16 +45,16 @@ export function customerCanCancel(startsAt: string, now: string, cancellationHou
   return Date.parse(startsAt) - Date.parse(now) >= cancellationHours * 3_600_000;
 }
 
-export type PricedLine = { priceClp: number; quantity?: number };
+export type PricedLine = { price: number; quantity?: number };
 
-/** Total en CLP enteros. */
+/** Total entero en la unidad mínima de la moneda del negocio (ADR 0006). */
 export function bookingTotal(lines: readonly PricedLine[]): number {
   return lines.reduce((sum, l) => {
     const qty = l.quantity ?? 1;
-    if (!Number.isSafeInteger(l.priceClp) || !Number.isSafeInteger(qty)) {
+    if (!Number.isSafeInteger(l.price) || !Number.isSafeInteger(qty)) {
       throw new Error('Los montos y cantidades deben ser enteros');
     }
-    return sum + l.priceClp * qty;
+    return sum + l.price * qty;
   }, 0);
 }
 

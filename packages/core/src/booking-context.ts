@@ -11,7 +11,7 @@ export type ContextService = {
   id: string;
   name: string;
   description: string | null;
-  priceClp: number;
+  price: number;
   durationMinutes: number;
   bufferBeforeMinutes: number;
   bufferAfterMinutes: number;
@@ -30,7 +30,7 @@ export type ContextResource = {
 export type ContextAddon = {
   id: string;
   name: string;
-  priceClp: number;
+  price: number;
   stock: number;
   usage: Array<{ startsAt: string; endsAt: string; quantity: number }>;
 };
@@ -41,6 +41,7 @@ export type BookingContext = {
     id: string;
     name: string;
     timezone: string;
+    currency: string;
     slot_interval_minutes: number;
     min_advance_minutes: number;
     max_advance_days: number;
