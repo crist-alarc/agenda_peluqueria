@@ -143,13 +143,16 @@ export async function linkProfessionalUser(db: DbClient, professionalId: string,
 // ---------------------------------------------------------------------------
 // Fase 2B: confirmación por email y portal del cliente
 // ---------------------------------------------------------------------------
+export type TokenPurpose = 'confirm' | 'cancel' | 'attend';
+
 export type TokenResult = {
-  result: 'confirmed' | 'already_confirmed' | 'cancelled' | 'expired' | 'invalid' | 'too_late';
+  result: 'confirmed' | 'already_confirmed' | 'attending' | 'already_attending' | 'cancelled' | 'expired' | 'invalid' | 'too_late';
   booking?: {
     status: string;
     startsAt: string;
     endsAt: string;
     businessName: string;
+    businessSlug: string;
     timezone: string;
     totalClp: number;
     services: string[];
@@ -164,7 +167,7 @@ export async function expirePendingBookings(db: DbClient): Promise<void> {
 /** Solo con el cliente de servicio: guarda el hash de un enlace de un solo uso. */
 export async function createBookingToken(
   serviceDb: DbClient,
-  args: { bookingId: string; purpose: 'confirm' | 'cancel'; tokenHash: string; expiresAt: string },
+  args: { bookingId: string; purpose: TokenPurpose; tokenHash: string; expiresAt: string; notificationId?: string | null },
 ): Promise<void> {
   unwrapMaybe(
     await serviceDb.rpc('app_create_booking_token', {
@@ -172,25 +175,13 @@ export async function createBookingToken(
       p_purpose: args.purpose,
       p_token_hash: args.tokenHash,
       p_expires_at: args.expiresAt,
+      p_notification_id: args.notificationId ?? undefined,
     }),
   );
 }
 
 export async function redeemBookingToken(db: DbClient, tokenHash: string): Promise<TokenResult> {
   return unwrap(await db.rpc('app_use_booking_token', { p_token_hash: tokenHash })) as unknown as TokenResult;
-}
-
-/** Estado y datos para el email de una reserva recién creada (cliente de servicio). */
-export async function getBookingForEmail(serviceDb: DbClient, bookingId: string) {
-  return unwrap(
-    await serviceDb
-      .from('bookings')
-      .select(
-        'id, status, starts_at, total_clp, hold_expires_at, customer:customers(full_name, email), business:businesses!bookings_visible_brand_business_id_fkey(name, timezone, pending_hold_minutes), booking_items(service_name, position)',
-      )
-      .eq('id', bookingId)
-      .single(),
-  );
 }
 
 /** Modo de confirmación del link público (cliente de servicio: dato interno). */
@@ -228,4 +219,124 @@ export async function updateConfirmationSettings(
   values: { public_confirmation_mode: 'auto' | 'email'; pending_hold_minutes: number },
 ): Promise<void> {
   expectRows(unwrap(await db.from('businesses').update(values).eq('id', businessId).select('id')));
+}
+
+// ---------------------------------------------------------------------------
+// Fase 2C: emails, recordatorios y registro de envíos
+// ---------------------------------------------------------------------------
+export type BookingEmailData = {
+  id: string;
+  businessId: string;
+  status: BookingStatus;
+  startsAt: string;
+  endsAt: string;
+  createdAt: string;
+  totalClp: number;
+  holdExpiresAt: string | null;
+  reminderSentAt: string | null;
+  attendanceConfirmedAt: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  brand: string;
+  businessSlug: string;
+  timezone: string;
+  branchName: string;
+  branchAddress: string;
+  settings: {
+    reminderEnabled: boolean;
+    reminderHoursBefore: number;
+    confirmationCutoffHours: number;
+    pendingHoldMinutes: number;
+    cancellationHours: number;
+  };
+  services: string[];
+};
+
+/** Todo lo necesario para escribir un email de una reserva (cliente de servicio). */
+export async function getBookingEmailData(serviceDb: DbClient, bookingId: string): Promise<BookingEmailData> {
+  const data = unwrapMaybe(await serviceDb.rpc('app_booking_email_data', { p_booking_id: bookingId }));
+  if (!data) throw new Error('Reserva no encontrada');
+  return data as unknown as BookingEmailData;
+}
+
+/** Reservas que podrían necesitar recordatorio; la decisión final es de @agenda/core. */
+export async function listReminderCandidates(serviceDb: DbClient, now: string): Promise<BookingEmailData[]> {
+  return (unwrap(await serviceDb.rpc('app_reminder_candidates', { p_now: now })) as unknown as BookingEmailData[]) ?? [];
+}
+
+/** Marca el recordatorio como enviado. false si otra ejecución ya lo tomó. */
+export async function claimReminder(serviceDb: DbClient, bookingId: string): Promise<boolean> {
+  return unwrap(await serviceDb.rpc('app_claim_reminder', { p_booking_id: bookingId })) === true;
+}
+
+export type NotificationKind = 'booking_pending' | 'booking_created' | 'reminder';
+
+/** Registra un envío antes de mandarlo (para enlazar los botones y medir el clic). */
+export async function logNotification(
+  serviceDb: DbClient,
+  n: { businessId: string; bookingId: string; kind: NotificationKind; recipient: string; channel?: 'email' | 'whatsapp' },
+): Promise<string> {
+  const row = unwrap(
+    await serviceDb
+      .from('notification_log')
+      .insert({ business_id: n.businessId, booking_id: n.bookingId, kind: n.kind, recipient: n.recipient, channel: n.channel ?? 'email' })
+      .select('id')
+      .single(),
+  );
+  return row.id;
+}
+
+export async function markNotification(serviceDb: DbClient, id: string, result: { ok: true } | { ok: false; error: string }): Promise<void> {
+  unwrap(
+    await serviceDb
+      .from('notification_log')
+      .update(result.ok ? { status: 'sent', sent_at: new Date().toISOString() } : { status: 'failed', error: result.error.slice(0, 500) })
+      .eq('id', id)
+      .select('id'),
+  );
+}
+
+/** clicked: presionó algún botón; attended: presionó "Confirmo asistencia". */
+export type NotificationStats = Record<NotificationKind, { sent: number; failed: number; clicked: number; attended: number }>;
+
+/** Cuántos emails se enviaron y cuántos clientes presionaron un botón (sección 18.2). */
+export async function notificationStats(db: DbClient, businessId: string, since: string): Promise<NotificationStats> {
+  const rows = unwrap(
+    await db.from('notification_log').select('kind, status, clicked_at, clicked_action').eq('business_id', businessId).gte('created_at', since).limit(10000),
+  );
+  const stats: NotificationStats = {
+    booking_pending: { sent: 0, failed: 0, clicked: 0, attended: 0 },
+    booking_created: { sent: 0, failed: 0, clicked: 0, attended: 0 },
+    reminder: { sent: 0, failed: 0, clicked: 0, attended: 0 },
+  };
+  for (const r of rows) {
+    const s = stats[r.kind as NotificationKind];
+    if (!s) continue;
+    if (r.status === 'sent') s.sent++;
+    if (r.status === 'failed') s.failed++;
+    if (r.clicked_at) s.clicked++;
+    if (r.clicked_action === 'attend') s.attended++;
+  }
+  return stats;
+}
+
+export async function updateReminderSettings(
+  db: DbClient,
+  businessId: string,
+  values: { reminder_enabled: boolean; reminder_hours_before: number; confirmation_cutoff_hours: number },
+): Promise<void> {
+  expectRows(unwrap(await db.from('businesses').update(values).eq('id', businessId).select('id')));
+}
+
+/** Recepción marca (o desmarca) que el cliente confirmó su asistencia, por ejemplo por teléfono. */
+export async function setAttendanceConfirmed(db: DbClient, bookingId: string, confirmed: boolean): Promise<void> {
+  expectRows(
+    unwrap(
+      await db
+        .from('bookings')
+        .update({ attendance_confirmed_at: confirmed ? new Date().toISOString() : null })
+        .eq('id', bookingId)
+        .select('id'),
+    ),
+  );
 }

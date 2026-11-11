@@ -317,3 +317,24 @@ export const confirmationSettingsSchema = z.object({
   confirmationMode: z.enum(['auto', 'email'], { message: 'Modo no válido' }),
   pendingHoldMinutes: z.coerce.number().int().min(5, 'Mínimo 5 minutos').max(1440, 'Máximo 24 horas'),
 });
+
+/** Recordatorios (fase 2C): todo lo relacionado con tiempo lo configura el negocio. */
+export const reminderSettingsSchema = z
+  .object({
+    businessId: uuid,
+    reminderEnabled: checkbox,
+    reminderHoursBefore: z.coerce
+      .number({ message: 'Ingresa las horas' })
+      .int('Usa horas enteras')
+      .min(1, 'Mínimo 1 hora antes')
+      .max(168, 'Máximo 168 horas (7 días) antes'),
+    confirmationCutoffHours: z.coerce
+      .number({ message: 'Ingresa las horas' })
+      .int('Usa horas enteras')
+      .min(0, 'No puede ser negativo')
+      .max(72, 'Máximo 72 horas antes'),
+  })
+  .refine((v) => v.confirmationCutoffHours < v.reminderHoursBefore, {
+    message: 'La hora de corte debe ser antes de la cita y después del recordatorio (menos horas que el recordatorio)',
+    path: ['confirmationCutoffHours'],
+  });

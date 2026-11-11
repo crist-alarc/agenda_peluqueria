@@ -9,15 +9,17 @@ import {
   slotQuerySchema,
   type BookingStatus,
 } from '@agenda/core';
-import { DbError, searchCustomers, setBookingStatus } from '@agenda/db';
+import { createServiceDbClient, DbError, searchCustomers, setAttendanceConfirmed, setBookingStatus } from '@agenda/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { BookingInput, SlotQueryInput, WizardCustomer } from '@/components/booking-wizard';
 import { fail as failState, ok, toActionError, type ActionState } from '@/lib/actions';
 import { availableSlots, bookSlot } from '@/lib/booking';
 import { formatDateTime } from '@/lib/dates';
+import { sendBookingEmail } from '@/lib/notify';
 import { requireBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
+import { siteUrl } from '@/lib/url';
 
 type Result<T> = { ok: true; data: T } | { ok: false; message: string };
 
@@ -53,8 +55,18 @@ export async function bookReception(input: BookingInput): Promise<Result<{ summa
       ? { id: b.customerId }
       : { full_name: b.fullName!, phone: normalizePhone(b.phone!), email: b.email };
     const result = await bookSlot(db, db, b, customer, b.notes, business.timezone, { ignoreMinAdvance: true });
+    // Aviso al cliente con el .ics (si tiene email). La reserva ya está guardada aunque el email falle.
+    let emailed = false;
+    try {
+      if (process.env.SUPABASE_SECRET_KEY) {
+        emailed = await sendBookingEmail(createServiceDbClient(), result.bookingId, await siteUrl());
+      }
+    } catch (error) {
+      console.error('No se pudo enviar el email de la reserva', error);
+    }
     revalidatePath(`/panel/${business.id}/agenda`);
-    return { ok: true, data: { summary: `Agendada para el ${formatDateTime(result.startsAt, business.timezone)}.` } };
+    const when = formatDateTime(result.startsAt, business.timezone);
+    return { ok: true, data: { summary: `Agendada para el ${when}.${emailed ? ' Le enviamos el detalle por email.' : ''}` } };
   } catch (error) {
     return fail(error);
   }
@@ -82,6 +94,20 @@ export async function setStatusAction(_: ActionState, form: FormData): Promise<A
     await setBookingStatus(db, bookingId, to, reason);
     revalidatePath(`/panel/${businessId}/agenda`);
     return ok(t.bookingStatusDone[to] ?? t.saved);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function setAttendanceAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const businessId = z.uuid().parse(form.get('businessId'));
+    const bookingId = z.uuid().parse(form.get('bookingId'));
+    const confirmed = form.get('confirmed') === 'true';
+    const { db } = await reception(businessId);
+    await setAttendanceConfirmed(db, bookingId, confirmed);
+    revalidatePath(`/panel/${businessId}/agenda`);
+    return ok(confirmed ? 'Asistencia confirmada' : 'Asistencia desmarcada');
   } catch (error) {
     return toActionError(error);
   }

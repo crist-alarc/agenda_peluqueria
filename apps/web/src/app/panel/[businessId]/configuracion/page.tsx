@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Field, Input, PageHeader, Select } from '@agenda/ui';
+import { notificationStats } from '@agenda/db';
 import { ActionForm, SubmitButton } from '@/components/action-form';
 import { requirePermission } from '@/lib/session';
 import { t } from '@/lib/texts';
 import { siteUrl } from '@/lib/url';
-import { updateBookingSettingsAction, updateBusinessAction, updateConfirmationSettingsAction } from '../actions';
+import { updateBookingSettingsAction, updateBusinessAction, updateConfirmationSettingsAction, updateReminderSettingsAction } from '../actions';
 
 export const metadata = { title: 'Configuración' };
 
@@ -11,7 +12,11 @@ const TIMEZONES = ['America/Santiago', 'America/Punta_Arenas', 'Pacific/Easter']
 
 export default async function SettingsPage({ params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
-  const { business } = await requirePermission(businessId, 'business.update');
+  const { db, business } = await requirePermission(businessId, 'business.update');
+  const stats = await notificationStats(db, business.id, new Date(Date.now() - 30 * 86_400_000).toISOString());
+  const reminded = stats.reminder.sent;
+  const attended = stats.reminder.attended;
+  const failed = stats.reminder.failed + stats.booking_created.failed + stats.booking_pending.failed;
   const publicUrl = `${await siteUrl()}/r/${business.slug}`;
 
   return (
@@ -117,6 +122,39 @@ export default async function SettingsPage({ params }: { params: Promise<{ busin
               <SubmitButton>Guardar</SubmitButton>
             </div>
           </ActionForm>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6 max-w-2xl">
+        <CardHeader>
+          <CardTitle>Recordatorios por email</CardTitle>
+          <CardDescription>
+            Antes de la cita, el cliente recibe un email con los botones &quot;Confirmo asistencia&quot; y &quot;Cancelar o
+            cambiar&quot;. Si no confirma antes de la hora de corte, la reserva aparece &quot;Sin confirmar&quot; en la Agenda.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ActionForm action={updateReminderSettingsAction} className="grid gap-4 sm:grid-cols-2">
+            <input type="hidden" name="businessId" value={business.id} />
+            <div className="sm:col-span-2">
+              <Checkbox name="reminderEnabled" label="Enviar recordatorios" defaultChecked={business.reminder_enabled} />
+            </div>
+            <Field label="Enviar recordatorio (horas antes de la cita)" hint="Entre 1 y 168 (7 días)">
+              <Input name="reminderHoursBefore" type="number" min={1} max={168} defaultValue={business.reminder_hours_before} />
+            </Field>
+            <Field label="Hora de corte (horas antes de la cita)" hint="Si no confirma antes, queda 'Sin confirmar'">
+              <Input name="confirmationCutoffHours" type="number" min={0} max={72} defaultValue={business.confirmation_cutoff_hours} />
+            </Field>
+            <div className="sm:col-span-2">
+              <SubmitButton>Guardar</SubmitButton>
+            </div>
+          </ActionForm>
+          <p className="border-t pt-3 text-sm text-muted-foreground" aria-label="Resultados de los últimos 30 días">
+            Últimos 30 días: {reminded} {reminded === 1 ? 'cliente recibió' : 'clientes recibieron'} la pregunta de asistencia y{' '}
+            {attended} {attended === 1 ? 'confirmó' : 'confirmaron'} con el botón
+            {reminded > 0 ? ` (${Math.round((attended / reminded) * 100)}%)` : ''}.
+            {failed > 0 && ` ${failed} ${failed === 1 ? 'email no se pudo enviar' : 'emails no se pudieron enviar'}.`}
+          </p>
         </CardContent>
       </Card>
     </>

@@ -48,3 +48,26 @@ export async function anonymousPage(browser: Browser): Promise<Page> {
   const ctx = await browser.newContext({ locale: 'es-CL', timezoneId: 'America/Santiago' });
   return ctx.newPage();
 }
+
+export type MailpitMessage = {
+  ID: string;
+  Subject: string;
+  HTML: string;
+  Text: string;
+  Attachments: Array<{ FileName: string; ContentType: string }>;
+};
+
+/** Último email enviado a `to` cuyo asunto contiene `subject` (espera hasta 10 s). */
+export async function emailTo(to: string, subject: string): Promise<MailpitMessage & { links: string[] }> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const list = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`)).json();
+    const found = (list.messages ?? []).find((m: { Subject: string }) => m.Subject.includes(subject));
+    if (found) {
+      const msg = (await (await fetch(`${MAILPIT}/api/v1/message/${found.ID}`)).json()) as MailpitMessage;
+      const links = [...String(msg.HTML).matchAll(/href="([^"]+)"/g)].map((m) => m[1]!.replace(/&amp;/g, '&'));
+      return { ...msg, links };
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error(`No llegó el email "${subject}" a ${to}`);
+}

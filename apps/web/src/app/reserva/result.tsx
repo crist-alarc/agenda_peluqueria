@@ -1,12 +1,15 @@
 import type { TokenResult } from '@agenda/db';
 import { formatClp } from '@agenda/core';
 import { Card, CardContent } from '@agenda/ui';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { formatDateTime } from '@/lib/dates';
 
 const MESSAGES: Record<TokenResult['result'], { title: string; text: string }> = {
   confirmed: { title: '¡Reserva confirmada!', text: 'Gracias. Te esperamos.' },
   already_confirmed: { title: 'Tu reserva ya estaba confirmada', text: 'No necesitas hacer nada más.' },
+  attending: { title: '¡Gracias por confirmar!', text: 'Te esperamos. Si algo cambia, avísanos con tiempo.' },
+  already_attending: { title: 'Ya habías confirmado tu asistencia', text: 'Te esperamos. No necesitas hacer nada más.' },
   cancelled: { title: 'Reserva cancelada', text: 'El horario quedó libre. Puedes reservar otra hora cuando quieras.' },
   expired: { title: 'El plazo para confirmar venció', text: 'El horario se liberó. Puedes hacer una nueva reserva.' },
   too_late: { title: 'Ya no se puede cancelar en línea', text: 'Falta poco para tu hora: contacta directamente al negocio.' },
@@ -30,6 +33,11 @@ export function TokenResultCard({ result, children }: { result: TokenResult; chi
               <p>{formatDateTime(b.startsAt, b.timezone)}</p>
               <p className="text-muted-foreground">{formatClp(b.totalClp)}</p>
             </div>
+          )}
+          {b?.businessSlug && (result.result === 'cancelled' || result.result === 'expired') && (
+            <Link href={`/r/${b.businessSlug}`} className="inline-block text-sm font-medium underline">
+              Reservar otra hora
+            </Link>
           )}
           {children}
         </CardContent>

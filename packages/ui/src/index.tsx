@@ -138,6 +138,7 @@ export const badgeVariants = cva('inline-flex items-center rounded-full border p
       outline: 'text-foreground',
       success: 'border-transparent bg-success/15 text-success',
       muted: 'border-transparent bg-muted text-muted-foreground',
+      warning: 'border-destructive/40 bg-destructive/10 text-destructive',
     },
   },
   defaultVariants: { variant: 'default' },
