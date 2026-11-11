@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { InvalidAmountError, parseClp } from './money';
 import { ROLES } from './roles';
+import { FULL_SHARE, SETTLEMENT_PERIODS, formatPercent, parsePercent, sharesFromWeights, validateShares, type Share } from './commissions';
 import { findOverlaps, isValidTimeZone, timeToMinutes } from './time';
 
 const uuid = z.uuid({ message: 'Identificador no válido' });
@@ -338,3 +339,125 @@ export const reminderSettingsSchema = z
     message: 'La hora de corte debe ser antes de la cita y después del recordatorio (menos horas que el recordatorio)',
     path: ['confirmationCutoffHours'],
   });
+
+// ---------------------------------------------------------------------------
+// Comisiones (fase 2D)
+// ---------------------------------------------------------------------------
+const optionalId = z
+  .union([uuid, z.literal('')])
+  .optional()
+  .transform((v) => (v ? v : null));
+
+/** Regla de comisión: porcentaje (se guarda en puntos básicos) o monto fijo en CLP. */
+export const commissionRuleSchema = z
+  .object({
+    businessId: uuid,
+    professionalId: optionalId,
+    serviceId: optionalId,
+    kind: z.enum(['percent', 'fixed'], { message: 'Elige porcentaje o monto fijo' }),
+    value: z.string({ message: 'Ingresa el valor' }).trim().min(1, 'Ingresa el valor'),
+    includeAddons: checkbox,
+  })
+  .transform((v, ctx) => {
+    let valueStored: number;
+    if (v.kind === 'percent') {
+      const n = Number(v.value.replace('%', '').replace(',', '.'));
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        ctx.addIssue({ code: 'custom', message: 'El porcentaje debe estar entre 0 y 100', path: ['value'] });
+        return z.NEVER;
+      }
+      valueStored = Math.round(n * 100);
+    } else {
+      try {
+        valueStored = parseClp(v.value);
+      } catch (error) {
+        ctx.addIssue({ code: 'custom', message: (error as Error).message, path: ['value'] });
+        return z.NEVER;
+      }
+    }
+    return { ...v, valueStored };
+  });
+
+const shareRow = z.object({ professionalId: uuid, value: z.string().trim() });
+
+/** Reparto manual de un servicio entre profesionales: por porcentaje o por minutos trabajados. */
+export const itemSharesSchema = z
+  .object({ mode: z.enum(['percent', 'minutes']), rows: z.array(shareRow).min(1, 'Indica al menos una persona') })
+  .transform((v, ctx) => {
+    const rows = v.rows.filter((r) => r.value !== '');
+    const numbers = rows.map((r) => Number(r.value.replace('%', '').replace(',', '.')));
+    if (numbers.some((n) => !Number.isFinite(n) || n < 0)) {
+      ctx.addIssue({ code: 'custom', message: 'Usa solo números positivos' });
+      return z.NEVER;
+    }
+    let shares: Share[];
+    if (v.mode === 'minutes') {
+      try {
+        shares = sharesFromWeights(rows.map((r, i) => ({ professionalId: r.professionalId, weight: numbers[i]! })));
+      } catch (error) {
+        ctx.addIssue({ code: 'custom', message: (error as Error).message });
+        return z.NEVER;
+      }
+    } else {
+      shares = rows.map((r, i) => ({ professionalId: r.professionalId, shareBp: Math.round(numbers[i]! * 100) })).filter((s) => s.shareBp > 0);
+    }
+    const error = validateShares(shares);
+    if (error) {
+      ctx.addIssue({ code: 'custom', message: error });
+      return z.NEVER;
+    }
+    return shares;
+  });
+
+/** Receta de un servicio (ej. corte 70% / secado 30%). Vacía = partes iguales. */
+export const serviceRecipeSchema = z
+  .array(
+    z.object({
+      label: name('El nombre del rol'),
+      percent: z.string().trim(),
+      requiredSkill: z
+        .string()
+        .trim()
+        .max(60)
+        .optional()
+        .transform((s) => (s ? s : null)),
+    }),
+  )
+  .transform((rows, ctx) => {
+    const roles = rows.map((r) => ({ label: r.label, shareBp: parsePercent(r.percent) ?? -1, requiredSkill: r.requiredSkill }));
+    if (roles.some((r) => r.shareBp <= 0)) {
+      ctx.addIssue({ code: 'custom', message: 'Cada rol necesita un porcentaje mayor que 0' });
+      return z.NEVER;
+    }
+    const total = roles.reduce((s, r) => s + r.shareBp, 0);
+    if (roles.length > 0 && total !== FULL_SHARE) {
+      ctx.addIssue({ code: 'custom', message: `La receta debe sumar 100% (suma ${formatPercent(total)})` });
+      return z.NEVER;
+    }
+    return roles;
+  });
+
+/** Ajuste a la comisión de una persona (positivo o negativo), siempre con motivo. */
+export const commissionAdjustmentSchema = z
+  .object({
+    businessId: uuid,
+    professionalId: uuid,
+    sign: z.enum(['+', '-']),
+    amount: clp,
+    note: z.string({ message: 'Indica el motivo' }).trim().min(3, 'Indica el motivo').max(300),
+  })
+  .refine((v) => v.amount > 0, { message: 'El monto debe ser mayor que 0', path: ['amount'] })
+  .transform((v) => ({ ...v, amountClp: v.sign === '-' ? -v.amount : v.amount }));
+
+export const settlementPeriodSchema = z
+  .object({
+    businessId: uuid,
+    start: isoDate,
+    end: isoDate,
+  })
+  .refine((v) => v.start <= v.end, { message: 'La fecha de inicio debe ser antes del término', path: ['end'] });
+
+export const commissionSettingsSchema = z.object({
+  businessId: uuid,
+  settlementPeriod: z.enum(SETTLEMENT_PERIODS, { message: 'Elige una frecuencia' }),
+});

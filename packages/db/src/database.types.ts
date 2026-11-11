@@ -323,6 +323,30 @@ export type Database = {
           },
         ]
       }
+      booking_item_shares: {
+        Row: {
+          booking_item_id: string
+          business_id: string
+          minutes: number | null
+          professional_id: string
+          share_bp: number
+        }
+        Insert: {
+          booking_item_id: string
+          business_id: string
+          minutes?: number | null
+          professional_id: string
+          share_bp: number
+        }
+        Update: {
+          booking_item_id?: string
+          business_id?: string
+          minutes?: number | null
+          professional_id?: string
+          share_bp?: number
+        }
+        Relationships: []
+      }
       booking_items: {
         Row: {
           booking_id: string
@@ -733,6 +757,7 @@ export type Database = {
           public_confirmation_mode: string
           reminder_enabled: boolean
           reminder_hours_before: number
+          settlement_period: string
           slot_interval_minutes: number
           slug: string
           timezone: string
@@ -755,6 +780,7 @@ export type Database = {
           public_confirmation_mode?: string
           reminder_enabled?: boolean
           reminder_hours_before?: number
+          settlement_period?: string
           slot_interval_minutes?: number
           slug: string
           timezone?: string
@@ -777,6 +803,7 @@ export type Database = {
           public_confirmation_mode?: string
           reminder_enabled?: boolean
           reminder_hours_before?: number
+          settlement_period?: string
           slot_interval_minutes?: number
           slug?: string
           timezone?: string
@@ -797,6 +824,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      commission_entries: {
+        Row: {
+          addon_base_clp: number
+          amount_clp: number
+          base_clp: number
+          booking_id: string | null
+          booking_item_id: string | null
+          business_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          note: string | null
+          occurred_at: string
+          professional_id: string
+          rule_id: string | null
+          rule_kind: string | null
+          rule_value: number | null
+          settlement_id: string | null
+          share_bp: number | null
+        }
+        Insert: {
+          addon_base_clp?: number
+          amount_clp: number
+          base_clp?: number
+          booking_id?: string | null
+          booking_item_id?: string | null
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          occurred_at: string
+          professional_id: string
+          rule_id?: string | null
+          rule_kind?: string | null
+          rule_value?: number | null
+          settlement_id?: string | null
+          share_bp?: number | null
+        }
+        Update: {
+          addon_base_clp?: number
+          amount_clp?: number
+          base_clp?: number
+          booking_id?: string | null
+          booking_item_id?: string | null
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          occurred_at?: string
+          professional_id?: string
+          rule_id?: string | null
+          rule_kind?: string | null
+          rule_value?: number | null
+          settlement_id?: string | null
+          share_bp?: number | null
+        }
+        Relationships: []
+      }
+      commission_rules: {
+        Row: {
+          active: boolean
+          business_id: string
+          created_at: string
+          id: string
+          include_addons: boolean
+          kind: string
+          professional_id: string | null
+          service_id: string | null
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          business_id: string
+          created_at?: string
+          id?: string
+          include_addons?: boolean
+          kind: string
+          professional_id?: string | null
+          service_id?: string | null
+          value: number
+        }
+        Update: {
+          active?: boolean
+          business_id?: string
+          created_at?: string
+          id?: string
+          include_addons?: boolean
+          kind?: string
+          professional_id?: string | null
+          service_id?: string | null
+          value?: number
+        }
+        Relationships: []
       }
       customers: {
         Row: {
@@ -1261,6 +1387,36 @@ export type Database = {
           },
         ]
       }
+      service_commission_roles: {
+        Row: {
+          business_id: string
+          id: string
+          label: string
+          position: number
+          required_skill: string | null
+          service_id: string
+          share_bp: number
+        }
+        Insert: {
+          business_id: string
+          id?: string
+          label: string
+          position?: number
+          required_skill?: string | null
+          service_id: string
+          share_bp: number
+        }
+        Update: {
+          business_id?: string
+          id?: string
+          label?: string
+          position?: number
+          required_skill?: string | null
+          service_id?: string
+          share_bp?: number
+        }
+        Relationships: []
+      }
       service_resource_requirements: {
         Row: {
           id: string
@@ -1343,11 +1499,87 @@ export type Database = {
           },
         ]
       }
+      settlements: {
+        Row: {
+          business_id: string
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_clp: number
+        }
+        Insert: {
+          business_id: string
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_clp?: number
+        }
+        Update: {
+          business_id?: string
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_clp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      app_add_commission_adjustment: {
+        Args: {
+          p_amount_clp: number
+          p_business_id: string
+          p_note: string
+          p_professional_id: string
+        }
+        Returns: string
+      }
+      app_booking_commission_data: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
+      app_bookings_missing_commissions: {
+        Args: { p_business_id: string; p_to: string }
+        Returns: string[]
+      }
+      app_create_settlement: {
+        Args: { p_business_id: string; p_end: string; p_start: string }
+        Returns: string
+      }
+      app_replace_booking_commissions: {
+        Args: { p_booking_id: string; p_lines: Json }
+        Returns: number
+      }
+      app_set_item_shares: {
+        Args: { p_booking_item_id: string; p_shares: Json }
+        Returns: undefined
+      }
+      app_set_service_recipe: {
+        Args: { p_roles: Json; p_service_id: string }
+        Returns: undefined
+      }
+      app_set_settlement_status: {
+        Args: { p_settlement_id: string; p_status: string }
+        Returns: undefined
+      }
       app_add_member: {
         Args: {
           p_branch_ids?: string[]

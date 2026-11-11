@@ -4,9 +4,9 @@ Plataforma SaaS para que pequeños negocios de servicios en Chile gestionen su a
 barberías, canchas, inflables, veterinarias y más. **Fuente de verdad del proyecto:
 [`docs/DIRECTRICES.md`](docs/DIRECTRICES.md).** Decisiones de arquitectura en [`docs/adr/`](docs/adr).
 
-**Fase actual:** 2 · MVP peluquería. Hecho: Fase 1, 2A (reservas, link público `/r/<negocio>`, agenda) y
-2B (confirmación con botón por email, portal `/mis-reservas`) y 2C (email con `.ics`, recordatorios
-configurables, "Sin confirmar" en la agenda). Estado y pendientes: [`docs/ESTADO.md`](docs/ESTADO.md).
+**Fase actual:** 2 · MVP peluquería, programada completa (siguiente: 3 · MVP inflables). Hecho: Fase 1, 2A (reservas, link público `/r/<negocio>`, agenda) y
+2B (confirmación con botón por email, portal `/mis-reservas`) 2C (email con `.ics`, recordatorios
+configurables, "Sin confirmar" en la agenda) y 2D (comisiones del equipo, liquidaciones en Excel y PDF). Estado y pendientes: [`docs/ESTADO.md`](docs/ESTADO.md).
 
 ## Estructura (monorepo pnpm)
 
