@@ -1,8 +1,20 @@
--- Imita lo mínimo de Supabase para probar migraciones y RLS en un PostgreSQL limpio.
-do $$ begin
-  if not exists (select from pg_roles where rolname = 'anon') then create role anon nologin noinherit; end if;
-  if not exists (select from pg_roles where rolname = 'authenticated') then create role authenticated nologin noinherit; end if;
-  if not exists (select from pg_roles where rolname = 'service_role') then create role service_role nologin noinherit bypassrls; end if;
+-- Los roles son de todo el servidor (no de cada base): los archivos de test corren en paralelo y
+-- pueden intentar crearlos a la vez, así que se ignora el error si otro ya lo creó.
+do $$
+declare r record;
+begin
+  for r in select * from (values
+    ('anon', 'nologin noinherit'),
+    ('authenticated', 'nologin noinherit'),
+    ('service_role', 'nologin noinherit bypassrls')
+  ) as t(name, opts) loop
+    if not exists (select from pg_roles where rolname = r.name) then
+      begin
+        execute format('create role %I %s', r.name, r.opts);
+      exception when duplicate_object or unique_violation then null;
+      end;
+    end if;
+  end loop;
 end $$;
 
 create schema if not exists auth;
