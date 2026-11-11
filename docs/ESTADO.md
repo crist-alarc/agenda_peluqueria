@@ -48,11 +48,7 @@
 ## 3. Tareas pendientes del dueño (fuera del código)
 
 - [x] Vercel → Environment Variables: `SUPABASE_SECRET_KEY`.
-- [ ] **Recordatorios (2C):** crear una clave larga al azar y guardarla en dos lugares:
-  - como `CRON_SECRET` en Vercel → Environment Variables;
-  - en Supabase → Edge Functions → Secrets, junto con `APP_URL=https://agenda-peluqueria-virid.vercel.app`.
-
-  Sin esto la tarea programada no envía recordatorios.
+- [x] Recordatorios (2C): `CRON_SECRET` en Vercel y en los secretos de la Edge Function, junto con `APP_URL`.
 - [ ] Supabase → Authentication → URL Configuration:
   - *Site URL*: `https://agenda-peluqueria-virid.vercel.app`;
   - *Redirect URL*: `https://agenda-peluqueria-virid.vercel.app/**`.
@@ -136,10 +132,10 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
-- **Recordatorios:** la tarea programada llega a la app, pero recibe 401 ("No autorizado"): el
-  `CRON_SECRET` de Vercel no coincide con el de los secretos de la Edge Function, o Vercel no se volvió a
-  publicar después de cargarlo. Para revisar: `select created, status_code, content from net._http_response
-  order by created desc limit 3;` debe mostrar 200.
+- **Recordatorios:** funcionando desde el 2026-11-11. La tarea programada responde 200
+  (`{"ok":true,...}`). Para revisar: `select created, status_code, content from net._http_response order by
+  created desc limit 3;`. Si vuelve a dar 401, el `CRON_SECRET` de Vercel y el de los secretos de la Edge
+  Function no coinciden; si da 503, falta en Vercel. Después de cambiarlo hay que volver a publicar en Vercel.
 
 ## 7. Traspaso a la Fase 3 · MVP inflables (piloto de los hermanos)
 
