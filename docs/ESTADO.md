@@ -59,7 +59,7 @@
 - [ ] Cuenta en Resend: en Vercel, agregar `RESEND_API_KEY` y `EMAIL_FROM`. **Sin dominio propio, Resend solo
       entrega al email del dueño de la cuenta.** Mientras tanto, usar el modo de confirmación `auto`.
 - [ ] Comprar el dominio y configurar SPF, DKIM y DMARC (necesario antes del piloto con clientes reales).
-- [ ] **Antes de la Fase 3:** documentar con los hermanos su proceso actual paso a paso (sección 7.1).
+- [ ] **Antes de la Fase 3:** documentar con los hermanos su proceso actual paso a paso (sección 7.1). En curso: `docs/proceso-inflables.md` (zonas, pedidos, bloques y colaboración ya descritos).
 
 ## 4. Datos del proyecto
 
