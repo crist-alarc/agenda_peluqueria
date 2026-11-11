@@ -460,6 +460,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          attendance_confirmed_at: string | null
           branch_id: string
           business_id: string
           cancel_reason: string | null
@@ -470,11 +471,10 @@ export type Database = {
           customer_confirmed_at: string | null
           customer_id: string
           ends_at: string
-          attendance_confirmed_at: string | null
           hold_expires_at: string | null
-          reminder_sent_at: string | null
           id: string
           notes: string | null
+          reminder_sent_at: string | null
           sold_by_user_id: string | null
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -483,6 +483,7 @@ export type Database = {
           visible_brand_business_id: string
         }
         Insert: {
+          attendance_confirmed_at?: string | null
           branch_id: string
           business_id: string
           cancel_reason?: string | null
@@ -493,11 +494,10 @@ export type Database = {
           customer_confirmed_at?: string | null
           customer_id: string
           ends_at: string
-          attendance_confirmed_at?: string | null
           hold_expires_at?: string | null
-          reminder_sent_at?: string | null
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           sold_by_user_id?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -506,6 +506,7 @@ export type Database = {
           visible_brand_business_id: string
         }
         Update: {
+          attendance_confirmed_at?: string | null
           branch_id?: string
           business_id?: string
           cancel_reason?: string | null
@@ -516,11 +517,10 @@ export type Database = {
           customer_confirmed_at?: string | null
           customer_id?: string
           ends_at?: string
-          attendance_confirmed_at?: string | null
           hold_expires_at?: string | null
-          reminder_sent_at?: string | null
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           sold_by_user_id?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -718,6 +718,7 @@ export type Database = {
         Row: {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours: number
+          confirmation_cutoff_hours: number
           created_at: string
           email: string | null
           id: string
@@ -726,10 +727,9 @@ export type Database = {
           min_advance_minutes: number
           name: string
           organization_id: string
-          phone: string | null
           pending_hold_minutes: number
+          phone: string | null
           public_booking_enabled: boolean
-          confirmation_cutoff_hours: number
           public_confirmation_mode: string
           reminder_enabled: boolean
           reminder_hours_before: number
@@ -740,6 +740,7 @@ export type Database = {
         Insert: {
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
+          confirmation_cutoff_hours?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -748,10 +749,9 @@ export type Database = {
           min_advance_minutes?: number
           name: string
           organization_id: string
-          phone?: string | null
           pending_hold_minutes?: number
+          phone?: string | null
           public_booking_enabled?: boolean
-          confirmation_cutoff_hours?: number
           public_confirmation_mode?: string
           reminder_enabled?: boolean
           reminder_hours_before?: number
@@ -762,6 +762,7 @@ export type Database = {
         Update: {
           booking_mode?: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
+          confirmation_cutoff_hours?: number
           created_at?: string
           email?: string | null
           id?: string
@@ -770,10 +771,9 @@ export type Database = {
           min_advance_minutes?: number
           name?: string
           organization_id?: string
-          phone?: string | null
           pending_hold_minutes?: number
+          phone?: string | null
           public_booking_enabled?: boolean
-          confirmation_cutoff_hours?: number
           public_confirmation_mode?: string
           reminder_enabled?: boolean
           reminder_hours_before?: number

@@ -61,7 +61,7 @@ Antes de programar la Fase 3, documentar con los hermanos su proceso actual paso
 | Supabase | proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | cuenta con email del dueño, rol `owner` en su negocio |
-| Migraciones aplicadas | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders` (ver nota de aplicación abajo) |
+| Migraciones aplicadas | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders` (todas verificadas idénticas a local) |
 | Tests (2C) | core 58 · notifications 6 · base de datos 83 · Playwright 26 |
 | Tarea programada | `pg_cron` job `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. URL de la función en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -84,10 +84,13 @@ Antes de programar la Fase 3, documentar con los hermanos su proceso actual paso
   - El link público crea reservas con el cliente de servicio (`SUPABASE_SECRET_KEY`) después de recalcular con el motor.
   - Cada mejora de seguridad o falla encontrada se cubre con un test, y se verifica que el test falle al romper la regla.
 
-## 7. Para aplicar la 2C en producción (checklist de Claude)
+## 7. Producción de la 2C (hecho el 2026-11-11)
 
-1. Aplicar `20261113120000_phase2c_reminders.sql` con `apply_migration` y verificar huellas (remoto = local).
-2. `insert into app.settings values ('reminders_function_url', 'https://yzqvvmsnpqjntuqeiskf.supabase.co/functions/v1/recordatorios')`.
-3. Desplegar la Edge Function `recordatorios` (`verify_jwt = false`, archivo en `packages/db/supabase/functions/recordatorios`).
-4. Regenerar `database.types.ts` y revisar el Security Advisor.
-5. El dueño carga `CRON_SECRET` (Vercel y secretos de la función) y `APP_URL` (secretos de la función).
+- [x] Migración `20261113120000_phase2c_reminders` aplicada (huella de funciones igual a la local).
+- [x] `app.settings.reminders_function_url` = `https://yzqvvmsnpqjntuqeiskf.supabase.co/functions/v1/recordatorios`.
+- [x] Edge Function `recordatorios` desplegada (`verify_jwt = false`).
+- [x] Tipos regenerados; Security Advisor sin avisos nuevos (solo los intencionales de antes).
+- [ ] El dueño carga `CRON_SECRET` (Vercel y secretos de la función) y `APP_URL` (secretos de la función).
+
+Nota: `apply_migration` puede pedir confirmación al dueño (por ejemplo, si la migración tiene `drop`).
+La tarjeta aparece en su app de Claude y vence en ~60 s: avisarle antes de aplicar.
