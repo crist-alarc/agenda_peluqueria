@@ -11,8 +11,10 @@
 | A | Padre Hurtado |
 | B | Maipú |
 
-- **[por confirmar]** ¿Cada zona es solo esa comuna o incluye comunas vecinas? ¿Qué pasa con un evento fuera
-  de ambas zonas (lo toman, cobran más o lo rechazan)?
+- Cada zona **incluye comunas vecinas** (Talagante, Lonquén, Peñaflor, etc.).
+  **[por confirmar]** la lista exacta de comunas de cada hermano.
+- **Fuera de las dos zonas:** buscan un contacto que trabaje en esa zona y operan con el mismo sistema que
+  usan entre hermanos. Es decir, los acuerdos no son solo entre hermanos: puede haber un acuerdo A ↔ primo C.
 
 ## 2. Cómo llega y se cierra un pedido
 
@@ -29,8 +31,9 @@
   tarde y se retira casi de noche en una ruta de retiro, pero **queda reservado todo el día** para ese evento.
   En la práctica, un juego se arrienda como máximo una vez por día.
 - **Toro mecánico: se arrienda por hora.** Puede arrendarse más de una vez el mismo día.
-  - **[por confirmar]** ¿Va con un operador? ¿Cuántas horas como mínimo? ¿Cuánto tiempo hace falta entre un
-    evento y otro para trasladarlo, montarlo y desmontarlo?
+  - **Va con operador** y se arrienda en **bloques de 3 horas**.
+  - El tiempo entre un evento y otro depende de la distancia entre ellos.
+  - Si se arrienda entre hermanos, **el operador lo pone el dueño del toro**.
 
 ## 4. Colaboración entre hermanos
 
@@ -53,17 +56,27 @@ juegos de B** y reserva los suyos, según cómo se haya cerrado el negocio.
 - **Cada hermano cobra al cliente los negocios que cierra.**
 - Después le paga a su hermano un **valor acordado previamente** por los juegos del hermano.
 
-### 4.4 Preguntas abiertas
+### 4.4 Respuestas del bloque 2 (2026-11-11)
 
-- **[por confirmar]** ¿Con qué nombre se presenta el hermano que hace la entrega: con el suyo o con el del
-  que vendió?
-- **[por confirmar]** ¿El valor acordado es un monto fijo por juego? ¿Es el mismo para los dos hermanos?
-- **[por confirmar]** Cuando el hermano de la zona lleva juegos que no son suyos, ¿cobra algo por ese
-  traslado o solo recibe el valor de sus propios juegos?
-- **[por confirmar]** ¿Cada cuánto se pagan entre ellos (por evento, semanal o mensual) y cómo llevan la
-  cuenta hoy?
-- **[por confirmar]** ¿Qué pasa si el cliente cancela, o si un juego se daña o vuelve sucio?
-- **[por confirmar]** ¿Dónde y cuándo se pasan los juegos entre ellos (el día antes, la misma mañana)?
+- **Marca:** el hermano que entrega se presenta con la marca **del que vendió**. En el caso 4.1, B se
+  presenta como A.
+- **Valor entre socios:** es un **monto fijo por juego**, y cada juego tiene su propio valor. Ese valor es
+  parte de un **acuerdo comercial**: hoy es el de A ↔ B, pero mañana puede ser A ↔ primo C, con otros valores.
+- **Traslado:** el hermano que lleva el pedido cobra solo por sus propios juegos, porque el costo de
+  logística es el mismo. El acuerdo debería permitir, de forma opcional, un **cargo por servicio** del socio.
+  Ese cargo debe tener un nombre genérico, no "armado", porque sirve para otros rubros (arriendo de losa,
+  mobiliario, etc.).
+- **Pago entre ellos:** en general, **cada semana se paga lo de la semana anterior**. Depende de cada caso.
+- **Traspaso de juegos:** se juntan en la bodega de uno de ellos o en un punto común de sus rutas. Depende
+  del juego y de la cantidad, y se organiza semana a semana.
+- **Daños:**
+  - Cada uno tiene su política de cobro por daño.
+  - Si el juego dañado tiene otro evento, intentan repararlo. Casi siempre lo logran: lo que más se daña son
+    las turbinas, y tienen repuestos.
+  - Si no se puede reparar, consiguen el mismo juego con otro arrendador.
+  - Si eso tampoco funciona, hablan con el cliente afectado y le cambian el juego por uno mejor al mismo
+    precio. Los clientes quedan contentos.
+  - Muy rara vez, si el juego mejor no cabe en el espacio, el cliente desiste.
 
 ## 5. Cómo se traduce al modelo de la app (lectura preliminar)
 
@@ -85,13 +98,34 @@ Esto no es una decisión; es para revisar con el dueño.
   vendedor para su propio cliente). Las columnas que ya existen en `booking_items` permiten guardarla, pero
   hay que decidir cómo se llama y si el traslado genera una tarifa. Se registrará en un ADR.
 - **Vendedor cobra y paga la tarifa socio fija**: coincide con los valores por defecto de la sección 14.4.
+  - La tarifa es por recurso y por acuerdo: cada par de negocios tiene sus propios valores.
+- **Cargo por servicio opcional del socio**, con nombre genérico. Es nuevo respecto de las directrices y va
+  en el ADR.
+- **Liquidación semanal por defecto**, con la frecuencia configurable (regla 6), igual que en la 2D.
+- **Marca:** es la del vendedor (`visible_brand_business_id`), y la orden de trabajo del socio muestra
+  "Atender como: A". Ya está en la sección 14.3.
+- **Traspaso entre socios:** no tiene una ventana fija. El acta guarda el lugar y la hora reales, y no se
+  exige una ventana configurada.
+- **Toro mecánico:** el operador es un recurso `person` del dueño del toro. El servicio requiere el toro y un
+  operador, por eso siempre lo atiende el dueño, aunque lo venda el socio.
+  - El tiempo de traslado entre eventos depende de la distancia, y el motor no calcula distancias. Propuesta:
+    una holgura configurable por servicio, que la recepción puede ajustar en cada reserva.
+- **Capacidad de logística:** **no es "un camión, un evento a la vez"**. Un camión hace una ruta con 3 a 6
+  eventos en el día. Propuesta: un tope de eventos por camión por día, configurable. Esto difiere de la
+  idea de "eventos en paralelo" de las secciones 8 y 10, así que hay que decidirlo y anotarlo en el ADR.
+- **Daños y reemplazos:** hace falta poder **cambiar el juego de una reserva por otro** sin cambiar el
+  precio. Conseguir un juego con un tercero equivale a un acuerdo con ese tercero.
 
-## 6. Pendiente de la entrevista
+## 6. Logística
+
+- **Camiones:** el hermano A tiene 3 y el hermano B tiene 1. **[por confirmar]** que el de un camión sea B.
+- Cada camión atiende en promedio **entre 3 y 6 eventos por día**. Depende mucho de las rutas.
+
+## 7. Pendiente de la entrevista
 
 Faltan los bloques 2 a 4 del guion de `docs/ESTADO.md` (sección 7.1):
 
 - **Catálogo:** juegos y adicionales de cada hermano, con cantidades y tiempos de montaje.
-- **Logística:** camionetas, personas y rutas.
 - **Abono y cancelación.**
 - **Condiciones del evento:** enchufe, superficie y lluvia.
 - **Registros que llevan hoy.**
