@@ -11,6 +11,7 @@ import {
   addonStockSchema,
   blockSchema,
   bookingSettingsSchema,
+  confirmationSettingsSchema,
   branchSchema,
   can,
   canAssignRole,
@@ -317,6 +318,21 @@ export async function linkProfessionalAction(_: ActionState, form: FormData): Pr
     await repo.linkProfessionalUser(db, professionalId, userId);
     revalidate(business.id, '/recursos');
     return ok(userId ? 'Cuenta vinculada: verá su propia agenda' : 'Cuenta desvinculada');
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function updateConfirmationSettingsAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const { db, business } = await contextFor(form, 'business.update');
+    const input = confirmationSettingsSchema.parse(formToObject(form));
+    await repo.updateConfirmationSettings(db, business.id, {
+      public_confirmation_mode: input.confirmationMode,
+      pending_hold_minutes: input.pendingHoldMinutes,
+    });
+    revalidatePath(`/panel/${business.id}/configuracion`);
+    return ok(t.saved);
   } catch (error) {
     return toActionError(error);
   }

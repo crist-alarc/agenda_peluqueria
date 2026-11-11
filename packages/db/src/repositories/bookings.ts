@@ -139,3 +139,93 @@ export async function updateBookingSettings(
 export async function linkProfessionalUser(db: DbClient, professionalId: string, userId: string | null): Promise<void> {
   expectRows(unwrap(await db.from('professionals').update({ user_id: userId }).eq('id', professionalId).select('id')));
 }
+
+// ---------------------------------------------------------------------------
+// Fase 2B: confirmación por email y portal del cliente
+// ---------------------------------------------------------------------------
+export type TokenResult = {
+  result: 'confirmed' | 'already_confirmed' | 'cancelled' | 'expired' | 'invalid' | 'too_late';
+  booking?: {
+    status: string;
+    startsAt: string;
+    endsAt: string;
+    businessName: string;
+    timezone: string;
+    totalClp: number;
+    services: string[];
+  };
+};
+
+/** Libera las reservas pendientes vencidas (antes de calcular horarios). */
+export async function expirePendingBookings(db: DbClient): Promise<void> {
+  unwrapMaybe(await db.rpc('app_expire_pending'));
+}
+
+/** Solo con el cliente de servicio: guarda el hash de un enlace de un solo uso. */
+export async function createBookingToken(
+  serviceDb: DbClient,
+  args: { bookingId: string; purpose: 'confirm' | 'cancel'; tokenHash: string; expiresAt: string },
+): Promise<void> {
+  unwrapMaybe(
+    await serviceDb.rpc('app_create_booking_token', {
+      p_booking_id: args.bookingId,
+      p_purpose: args.purpose,
+      p_token_hash: args.tokenHash,
+      p_expires_at: args.expiresAt,
+    }),
+  );
+}
+
+export async function redeemBookingToken(db: DbClient, tokenHash: string): Promise<TokenResult> {
+  return unwrap(await db.rpc('app_use_booking_token', { p_token_hash: tokenHash })) as unknown as TokenResult;
+}
+
+/** Estado y datos para el email de una reserva recién creada (cliente de servicio). */
+export async function getBookingForEmail(serviceDb: DbClient, bookingId: string) {
+  return unwrap(
+    await serviceDb
+      .from('bookings')
+      .select(
+        'id, status, starts_at, total_clp, hold_expires_at, customer:customers(full_name, email), business:businesses!bookings_visible_brand_business_id_fkey(name, timezone, pending_hold_minutes), booking_items(service_name, position)',
+      )
+      .eq('id', bookingId)
+      .single(),
+  );
+}
+
+/** Modo de confirmación del link público (cliente de servicio: dato interno). */
+export async function getConfirmationMode(serviceDb: DbClient, businessId: string): Promise<'auto' | 'email'> {
+  const row = unwrap(await serviceDb.from('businesses').select('public_confirmation_mode').eq('id', businessId).single());
+  return row.public_confirmation_mode === 'email' ? 'email' : 'auto';
+}
+
+export type MyBooking = {
+  id: string;
+  status: BookingStatus;
+  startsAt: string;
+  endsAt: string;
+  totalClp: number;
+  businessName: string;
+  businessSlug: string;
+  timezone: string;
+  cancellationHours: number;
+  services: string[];
+};
+
+/** Vincula fichas por email verificado y devuelve las reservas de la cuenta. */
+export async function listMyBookings(db: DbClient): Promise<MyBooking[]> {
+  unwrapMaybe(await db.rpc('app_link_my_customers'));
+  return (unwrap(await db.rpc('app_my_bookings')) as unknown as MyBooking[]) ?? [];
+}
+
+export async function customerCancelBooking(db: DbClient, bookingId: string): Promise<void> {
+  unwrapMaybe(await db.rpc('app_customer_cancel_booking', { p_booking_id: bookingId }));
+}
+
+export async function updateConfirmationSettings(
+  db: DbClient,
+  businessId: string,
+  values: { public_confirmation_mode: 'auto' | 'email'; pending_hold_minutes: number },
+): Promise<void> {
+  expectRows(unwrap(await db.from('businesses').update(values).eq('id', businessId).select('id')));
+}

@@ -9,7 +9,7 @@ import {
   type BookingContext,
   type SlotQuery,
 } from '@agenda/core';
-import { createBooking, DbError, getBookingContext, type DbClient, type NewBooking } from '@agenda/db';
+import { createBooking, DbError, expirePendingBookings, getBookingContext, type DbClient, type NewBooking } from '@agenda/db';
 
 /**
  * Lógica de reservas en el servidor (principio 3): el navegador solo elige;
@@ -22,6 +22,8 @@ export type SlotOption = { startsAt: string; label: string; endsAt: string };
 type Options = { ignoreMinAdvance?: boolean; now?: string };
 
 async function loadContext(db: DbClient, q: SlotQuery, timeZone: string): Promise<BookingContext> {
+  // Las reservas pendientes que no se confirmaron a tiempo liberan su horario
+  await expirePendingBookings(db);
   const range = dayRange(q.date, timeZone);
   return getBookingContext(db, { businessId: q.businessId, branchId: q.branchId, ...range });
 }

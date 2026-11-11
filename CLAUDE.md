@@ -1,6 +1,6 @@
 # Instrucciones para Claude Code
 
-**Lee `docs/DIRECTRICES.md` antes de cada tarea.** Es la fuente de verdad del proyecto y prevalece sobre
+**Lee `docs/DIRECTRICES.md` antes de cada tarea, y `docs/ESTADO.md` al empezar una sesión** (estado, pendientes y cómo retomar). Es la fuente de verdad del proyecto y prevalece sobre
 cualquier otra documentación del repositorio. Resumen de las reglas de trabajo (sección 26):
 
 - Antes de algo no trivial, presentar un plan breve (archivos, tablas, migraciones) y esperar aprobación.
@@ -14,8 +14,8 @@ cualquier otra documentación del repositorio. Resumen de las reglas de trabajo 
 
 Monorepo pnpm según las directrices (ver `README.md`).
 - **Fase 1 · Fundaciones:** cerrada (aprobada por el dueño). Decisiones: `docs/adr/0001-fase-1-fundaciones.md`.
-- **Fase 2 · MVP peluquería:** en curso, en entregas 2A–2D. 2A (reservas) implementada.
-  Decisiones: `docs/adr/0002-fase-2a-reservas.md`.
+- **Fase 2 · MVP peluquería:** en curso, en entregas 2A–2D. 2A y 2B implementadas; sigue 2C.
+  Decisiones: `docs/adr/0002-fase-2a-reservas.md`, `docs/adr/0003-fase-2b-confirmacion-portal.md`.
 
 Comandos de verificación antes de cada push: `pnpm typecheck`, `pnpm test`, `pnpm test:db`
 (PostgreSQL local) y, si cambia la interfaz, `pnpm --filter @agenda/web e2e` con Supabase local.

@@ -410,6 +410,44 @@ export type Database = {
           },
         ]
       }
+      booking_tokens: {
+        Row: {
+          booking_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          purpose: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          purpose: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_tokens_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           branch_id: string
@@ -419,8 +457,10 @@ export type Database = {
           channel: Database["public"]["Enums"]["booking_channel"]
           created_at: string
           created_by_user_id: string | null
+          customer_confirmed_at: string | null
           customer_id: string
           ends_at: string
+          hold_expires_at: string | null
           id: string
           notes: string | null
           sold_by_user_id: string | null
@@ -438,8 +478,10 @@ export type Database = {
           channel: Database["public"]["Enums"]["booking_channel"]
           created_at?: string
           created_by_user_id?: string | null
+          customer_confirmed_at?: string | null
           customer_id: string
           ends_at: string
+          hold_expires_at?: string | null
           id?: string
           notes?: string | null
           sold_by_user_id?: string | null
@@ -457,8 +499,10 @@ export type Database = {
           channel?: Database["public"]["Enums"]["booking_channel"]
           created_at?: string
           created_by_user_id?: string | null
+          customer_confirmed_at?: string | null
           customer_id?: string
           ends_at?: string
+          hold_expires_at?: string | null
           id?: string
           notes?: string | null
           sold_by_user_id?: string | null
@@ -667,7 +711,9 @@ export type Database = {
           name: string
           organization_id: string
           phone: string | null
+          pending_hold_minutes: number
           public_booking_enabled: boolean
+          public_confirmation_mode: string
           slot_interval_minutes: number
           slug: string
           timezone: string
@@ -684,7 +730,9 @@ export type Database = {
           name: string
           organization_id: string
           phone?: string | null
+          pending_hold_minutes?: number
           public_booking_enabled?: boolean
+          public_confirmation_mode?: string
           slot_interval_minutes?: number
           slug: string
           timezone?: string
@@ -701,7 +749,9 @@ export type Database = {
           name?: string
           organization_id?: string
           phone?: string | null
+          pending_hold_minutes?: number
           public_booking_enabled?: boolean
+          public_confirmation_mode?: string
           slot_interval_minutes?: number
           slug?: string
           timezone?: string
@@ -1242,6 +1292,15 @@ export type Database = {
         }
         Returns: string
       }
+      app_create_booking_token: {
+        Args: {
+          p_booking_id: string
+          p_expires_at: string
+          p_purpose: string
+          p_token_hash: string
+        }
+        Returns: undefined
+      }
       app_create_business: {
         Args: {
           p_branch_address?: string
@@ -1253,7 +1312,15 @@ export type Database = {
         }
         Returns: string
       }
+      app_customer_cancel_booking: {
+        Args: { p_booking_id: string }
+        Returns: undefined
+      }
+      app_expire_pending: { Args: never; Returns: number }
+      app_link_my_customers: { Args: never; Returns: number }
+      app_my_bookings: { Args: never; Returns: Json }
       app_public_business: { Args: { p_slug: string }; Returns: Json }
+      app_use_booking_token: { Args: { p_token_hash: string }; Returns: Json }
     }
     Enums: {
       booking_channel:

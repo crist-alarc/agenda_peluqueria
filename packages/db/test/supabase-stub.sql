@@ -10,6 +10,7 @@ create table if not exists auth.users (
   id uuid primary key,
   email text,
   raw_user_meta_data jsonb not null default '{}'::jsonb,
+  email_confirmed_at timestamptz default now(),
   created_at timestamptz not null default now()
 );
 

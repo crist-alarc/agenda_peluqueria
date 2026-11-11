@@ -49,6 +49,7 @@ export function BookingWizard({
   getSlots,
   book,
   searchCustomers,
+  emailRequired = false,
 }: {
   mode: 'public' | 'reception';
   businessId: string;
@@ -59,8 +60,10 @@ export function BookingWizard({
   dates: WizardDate[];
   initialDate?: string;
   getSlots: (q: SlotQueryInput) => Promise<Result<SlotOption[]>>;
-  book: (b: BookingInput) => Promise<Result<{ summary: string }>>;
+  book: (b: BookingInput) => Promise<Result<{ summary: string; title?: string }>>;
   searchCustomers?: (query: string) => Promise<Result<WizardCustomer[]>>;
+  /** El negocio confirma por email: el email es obligatorio. */
+  emailRequired?: boolean;
 }) {
   const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
   const [serviceIds, setServiceIds] = useState<string[]>([]);
@@ -70,7 +73,7 @@ export function BookingWizard({
   const [slots, setSlots] = useState<SlotOption[] | null>(null);
   const [slot, setSlot] = useState<SlotOption | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
+  const [done, setDone] = useState<{ summary: string; title?: string } | null>(null);
   const [loadingSlots, startSlots] = useTransition();
   const [booking, startBooking] = useTransition();
 
@@ -139,7 +142,7 @@ export function BookingWizard({
         notes: form.notes,
       });
       if (res.ok) {
-        setDone(res.data.summary);
+        setDone(res.data);
       } else {
         setError(res.message);
         // El horario pudo ser tomado por otra persona: refrescar opciones
@@ -167,8 +170,8 @@ export function BookingWizard({
           <div className="flex size-12 items-center justify-center rounded-full bg-success/15 text-success">
             <Check className="size-6" />
           </div>
-          <h2 className="text-xl font-semibold">{mode === 'public' ? '¡Reserva confirmada!' : 'Reserva creada'}</h2>
-          <p className="text-sm text-muted-foreground">{done}</p>
+          <h2 className="text-xl font-semibold">{done.title ?? (mode === 'public' ? '¡Reserva confirmada!' : 'Reserva creada')}</h2>
+          <p className="text-sm text-muted-foreground">{done.summary}</p>
           <Button variant="outline" onClick={reset}>
             {mode === 'public' ? 'Hacer otra reserva' : 'Nueva reserva'}
           </Button>
@@ -410,9 +413,14 @@ export function BookingWizard({
                     required
                   />
                 </Field>
-                <Field label="Email (opcional)" className="sm:col-span-2">
+                <Field
+                  label={emailRequired ? 'Email' : 'Email (opcional)'}
+                  hint={emailRequired ? 'Te enviaremos un botón para confirmar la reserva' : undefined}
+                  className="sm:col-span-2"
+                >
                   <Input
                     type="email"
+                    required={emailRequired}
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     autoComplete="email"
