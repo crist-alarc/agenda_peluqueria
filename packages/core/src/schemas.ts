@@ -311,3 +311,9 @@ export const bookingSettingsSchema = z.object({
   cancellationHours: z.coerce.number().int().min(0).max(168),
   publicBookingEnabled: checkbox,
 });
+
+export const confirmationSettingsSchema = z.object({
+  businessId: uuid,
+  confirmationMode: z.enum(['auto', 'email'], { message: 'Modo no válido' }),
+  pendingHoldMinutes: z.coerce.number().int().min(5, 'Mínimo 5 minutos').max(1440, 'Máximo 24 horas'),
+});
