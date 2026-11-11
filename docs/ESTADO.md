@@ -73,7 +73,7 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Migraciones | `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
 | Tests (2D) | core 74 · notifications 6 · base de datos 94 · Playwright 29 |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -132,9 +132,14 @@
 
 - 2C: migración aplicada y verificada; `reminders_function_url` configurada; Edge Function `recordatorios`
   desplegada; tipos regenerados.
-- 2D: ver el PR de la 2D. Si la migración `20261114120000_phase2d_commissions` aún no figura aplicada en
-  Supabase (`list_migrations`), aplicarla siguiendo la sección 5. Esa migración también pasa los negocios
-  existentes al plan `completo`.
+- 2D (2026-11-11): `20261114120000_phase2d_commissions` y `20261114130000_phase2d_advisor_fix` aplicadas. La
+  huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
+  comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
+  `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
+- **Recordatorios:** la tarea programada llega a la app, pero recibe 401 ("No autorizado"): el
+  `CRON_SECRET` de Vercel no coincide con el de los secretos de la Edge Function, o Vercel no se volvió a
+  publicar después de cargarlo. Para revisar: `select created, status_code, content from net._http_response
+  order by created desc limit 3;` debe mostrar 200.
 
 ## 7. Traspaso a la Fase 3 · MVP inflables (piloto de los hermanos)
 
