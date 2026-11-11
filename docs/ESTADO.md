@@ -2,7 +2,7 @@
 
 > Documento vivo para retomar el trabajo en una sesión nueva sin perder contexto.
 > **Fuente de verdad:** `docs/DIRECTRICES.md` (v1.2, final según el dueño). Decisiones: `docs/adr/`.
-> Última actualización: 2026-11-11 (cierre de 2B).
+> Última actualización: 2026-11-11 (2C implementada).
 
 ## 1. Dónde estamos
 
@@ -11,9 +11,9 @@
 | 1 · Fundaciones | **Cerrada** (aprobada). ADR 0001. PR #3 |
 | 2 · MVP peluquería | **En curso**, en 4 entregas (ADR 0002) |
 | 2A · Reservas | **Hecha** y en `main` (PR #5): motor de disponibilidad, link público `/r/<slug>`, agenda de recepción, clientes |
-| 2B · Confirmación por email y portal | **Hecha** (ADR 0003): botón "Confirmar" en el email, modo auto/email por negocio, `/mis-reservas` |
-| 2C · Emails y recordatorios | **Siguiente** |
-| 2D · Comisiones | Pendiente |
+| 2B · Confirmación por email y portal | **Hecha** y en `main` (PR #6, ADR 0003): botón "Confirmar" en el email, modo auto/email por negocio, `/mis-reservas` |
+| 2C · Emails y recordatorios | **Hecha** (ADR 0004): email con `.ics`, recordatorio configurable con "Confirmo asistencia", "Sin confirmar" en la agenda, registro de envíos, tarea programada |
+| 2D · Comisiones | **Siguiente** |
 
 ## 2. Decisiones del dueño (2026-11-10), además de las directrices
 
@@ -22,28 +22,28 @@
 3. Tareas programadas (recordatorios): **Supabase Cron + Edge Function** que solo invoca lógica de `packages/core`.
 4. Piloto con peluquería real: **más adelante**; por ahora seguir programando. Antes del piloto: Vercel Pro + Supabase Pro.
 5. Las directrices v1.2 son finales: las decisiones nuevas se registran en ADR, no se edita `DIRECTRICES.md`.
+6. **(2026-11-11) Regla general: toda interacción con usuarios que dependa de un tiempo es configurable
+   por el negocio** (nada de plazos fijos en el código). Tabla de plazos en ADR 0004, sección 1.
+7. (2026-11-11) Las horas de envío del recordatorio las elige el dueño de cada negocio (24 h por defecto).
 
 ## 3. Plan de las entregas que faltan de la Fase 2
 
-**2C · Emails y recordatorios** (sección 18):
-- Email de confirmación al reservar (modo `auto`) con archivo `.ics` y enlaces de un solo uso
-  (reusar `booking_tokens`; agregar propósito `reminder_confirm` si hace falta).
-- Recordatorio 24 h antes con botones "Confirmo asistencia" / "Cancelar o cambiar" (`customer_confirmed_at`).
-- Si no confirma antes de la hora de corte (4 h por defecto, configurable): marcar "sin confirmar" en la
-  agenda (WhatsApp queda preparado, sin proveedor todavía).
-- Registro de cada envío (canal, tipo, estado, clic) para medir cuántos confirman por email.
-- Tarea programada: **Supabase Cron + Edge Function** que solo invoca lógica de `packages/core`
-  (decisión del dueño); también libera pendientes vencidas (`app.expire_pending_bookings`).
+**2C · Emails y recordatorios:** hecha, ver ADR 0004. Sin WhatsApp (no hay proveedor): los clientes sin email
+no reciben recordatorio. Reprogramar en un paso ("cambiar") queda para después: hoy es cancelar y reservar de nuevo.
 
 **2D · Comisiones del equipo** (sección 16): reglas por persona y servicio (monto fijo o %), movimientos
 al completar una reserva, liquidación por período exportable a Excel; liquidaciones cerradas no se modifican.
+Recordar la regla 6: si aparece algún plazo (ej. período de liquidación), debe ser configurable.
 
 **Cierre de la Fase 2:** actualizar este documento con el traspaso a la **Fase 3 (MVP inflables)**.
 Antes de programar la Fase 3, documentar con los hermanos su proceso actual paso a paso (sección 24).
 
 ## 4. Tareas pendientes del dueño (fuera del código)
 
-- [ ] **Vercel → Environment Variables: `SUPABASE_SECRET_KEY`** (clave *secret* de Supabase). Sin ella el link público no guarda reservas.
+- [x] Vercel → Environment Variables: `SUPABASE_SECRET_KEY` (hecho por el dueño).
+- [ ] **Recordatorios (2C)**: inventar una clave larga al azar y ponerla como `CRON_SECRET` en Vercel →
+      Environment Variables, y también en Supabase → Edge Functions → Secrets junto con
+      `APP_URL=https://agenda-peluqueria-virid.vercel.app`. Sin esto la tarea programada no envía recordatorios.
 - [ ] Supabase → Authentication → URL Configuration: *Site URL* `https://agenda-peluqueria-virid.vercel.app` y *Redirect URL* `https://agenda-peluqueria-virid.vercel.app/**`.
 - [ ] GitHub → Settings → Pages → **Unpublish site** (todavía puede mostrar el prototipo viejo).
 - [ ] Supabase → Authentication: activar protección de contraseñas filtradas (aviso del Security Advisor).
@@ -61,8 +61,9 @@ Antes de programar la Fase 3, documentar con los hermanos su proceso actual paso
 | Supabase | proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | cuenta con email del dueño, rol `owner` en su negocio |
-| Migraciones aplicadas | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix` |
-| Tests (2B) | core 48 · notifications 2 · base de datos 69 · Playwright 23 |
+| Migraciones aplicadas | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders` (ver nota de aplicación abajo) |
+| Tests (2C) | core 58 · notifications 6 · base de datos 83 · Playwright 26 |
+| Tarea programada | `pg_cron` job `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. URL de la función en `app.settings.reminders_function_url` (dato por ambiente) |
 
 ## 6. Cómo trabaja Claude en este repo (notas técnicas)
 
@@ -82,3 +83,11 @@ Antes de programar la Fase 3, documentar con los hermanos su proceso actual paso
   - RLS con funciones `app.*` (esquema no expuesto); `app.current_user_id()` y `app.current_request_role()` son los únicos puntos que conocen al proveedor de auth.
   - El link público crea reservas con el cliente de servicio (`SUPABASE_SECRET_KEY`) después de recalcular con el motor.
   - Cada mejora de seguridad o falla encontrada se cubre con un test, y se verifica que el test falle al romper la regla.
+
+## 7. Para aplicar la 2C en producción (checklist de Claude)
+
+1. Aplicar `20261113120000_phase2c_reminders.sql` con `apply_migration` y verificar huellas (remoto = local).
+2. `insert into app.settings values ('reminders_function_url', 'https://yzqvvmsnpqjntuqeiskf.supabase.co/functions/v1/recordatorios')`.
+3. Desplegar la Edge Function `recordatorios` (`verify_jwt = false`, archivo en `packages/db/supabase/functions/recordatorios`).
+4. Regenerar `database.types.ts` y revisar el Security Advisor.
+5. El dueño carga `CRON_SECRET` (Vercel y secretos de la función) y `APP_URL` (secretos de la función).
