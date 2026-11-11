@@ -2,7 +2,7 @@
 
 > Documento vivo para retomar el trabajo en una sesión nueva sin perder contexto.
 > **Fuente de verdad:** `docs/DIRECTRICES.md` (v1.2, final según el dueño). Decisiones: `docs/adr/`.
-> Última actualización: 2026-11-11.
+> Última actualización: 2026-11-11 (cierre de 2B).
 
 ## 1. Dónde estamos
 
@@ -11,8 +11,8 @@
 | 1 · Fundaciones | **Cerrada** (aprobada). ADR 0001. PR #3 |
 | 2 · MVP peluquería | **En curso**, en 4 entregas (ADR 0002) |
 | 2A · Reservas | **Hecha** y en `main` (PR #5): motor de disponibilidad, link público `/r/<slug>`, agenda de recepción, clientes |
-| 2B · Portal del cliente e invitados | **Siguiente** |
-| 2C · Emails y recordatorios | Pendiente |
+| 2B · Confirmación por email y portal | **Hecha** (ADR 0003): botón "Confirmar" en el email, modo auto/email por negocio, `/mis-reservas` |
+| 2C · Emails y recordatorios | **Siguiente** |
 | 2D · Comisiones | Pendiente |
 
 ## 2. Decisiones del dueño (2026-11-10), además de las directrices
@@ -23,16 +23,23 @@
 4. Piloto con peluquería real: **más adelante**; por ahora seguir programando. Antes del piloto: Vercel Pro + Supabase Pro.
 5. Las directrices v1.2 son finales: las decisiones nuevas se registran en ADR, no se edita `DIRECTRICES.md`.
 
-## 3. Plan de la entrega 2B (propuesto, falta aprobar detalle)
+## 3. Plan de las entregas que faltan de la Fase 2
 
-- **Portal del cliente** ("Mis reservas"): una cuenta ve sus reservas en todos los negocios (sección 12) y cancela
-  según la política del negocio (`cancellation_hours`, ya existe; regla en `customerCanCancel` de `packages/core`).
-- **Invitados verificados**: en el link público, nombre + teléfono + email → código de 6 dígitos por email →
-  la reserva pasa de `pending` a `confirmed` al verificar (o reserva `pending` con vencimiento corto).
-  Requiere tabla de códigos (hash del código, intentos, expiración) con RLS, y límite de intentos.
-- **Vinculación** de reservas de invitado a una cuenta **solo tras verificar** el mismo email o teléfono (sección 5.3).
-- Envío de email detrás de una interfaz propia (`packages/notifications`, sección 3.1); Resend como primer proveedor.
-- Riesgo abierto que 2B mitiga: hoy el link público acepta reservas solo con nombre y teléfono (reservas falsas).
+**2C · Emails y recordatorios** (sección 18):
+- Email de confirmación al reservar (modo `auto`) con archivo `.ics` y enlaces de un solo uso
+  (reusar `booking_tokens`; agregar propósito `reminder_confirm` si hace falta).
+- Recordatorio 24 h antes con botones "Confirmo asistencia" / "Cancelar o cambiar" (`customer_confirmed_at`).
+- Si no confirma antes de la hora de corte (4 h por defecto, configurable): marcar "sin confirmar" en la
+  agenda (WhatsApp queda preparado, sin proveedor todavía).
+- Registro de cada envío (canal, tipo, estado, clic) para medir cuántos confirman por email.
+- Tarea programada: **Supabase Cron + Edge Function** que solo invoca lógica de `packages/core`
+  (decisión del dueño); también libera pendientes vencidas (`app.expire_pending_bookings`).
+
+**2D · Comisiones del equipo** (sección 16): reglas por persona y servicio (monto fijo o %), movimientos
+al completar una reserva, liquidación por período exportable a Excel; liquidaciones cerradas no se modifican.
+
+**Cierre de la Fase 2:** actualizar este documento con el traspaso a la **Fase 3 (MVP inflables)**.
+Antes de programar la Fase 3, documentar con los hermanos su proceso actual paso a paso (sección 24).
 
 ## 4. Tareas pendientes del dueño (fuera del código)
 
@@ -42,7 +49,9 @@
 - [ ] Supabase → Authentication: activar protección de contraseñas filtradas (aviso del Security Advisor).
 - [ ] Verificación en dos pasos en Vercel, Supabase y GitHub (sección 21).
 - [ ] Verificar los feriados de Chile 2026–2027 precargados contra la fuente oficial.
-- [ ] Antes de 2C: cuenta en Resend (y más adelante dominio con SPF/DKIM/DMARC).
+- [ ] Cuenta en Resend: en Vercel agregar `RESEND_API_KEY` y `EMAIL_FROM`. **Sin dominio propio Resend solo
+      entrega al email del dueño de la cuenta**: mientras tanto usar el modo de confirmación `auto`.
+- [ ] Comprar dominio y configurar SPF/DKIM/DMARC (necesario antes del piloto con clientes reales).
 
 ## 5. Datos del proyecto
 
@@ -52,7 +61,8 @@
 | Supabase | proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | cuenta con email del dueño, rol `owner` en su negocio |
-| Migraciones aplicadas | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings` |
+| Migraciones aplicadas | `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix` |
+| Tests (2B) | core 48 · notifications 2 · base de datos 69 · Playwright 23 |
 
 ## 6. Cómo trabaja Claude en este repo (notas técnicas)
 

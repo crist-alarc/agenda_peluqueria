@@ -4,8 +4,8 @@ Plataforma SaaS para que pequeños negocios de servicios en Chile gestionen su a
 barberías, canchas, inflables, veterinarias y más. **Fuente de verdad del proyecto:
 [`docs/DIRECTRICES.md`](docs/DIRECTRICES.md).** Decisiones de arquitectura en [`docs/adr/`](docs/adr).
 
-**Fase actual:** 2 · MVP peluquería. Hecho: Fase 1 (fundaciones) y 2A (reservas: motor de
-disponibilidad, link público `/r/<negocio>`, agenda de recepción y clientes).
+**Fase actual:** 2 · MVP peluquería. Hecho: Fase 1, 2A (reservas, link público `/r/<negocio>`, agenda) y
+2B (confirmación con botón por email, portal `/mis-reservas`). Estado y pendientes: [`docs/ESTADO.md`](docs/ESTADO.md).
 
 ## Estructura (monorepo pnpm)
 
@@ -34,6 +34,7 @@ npx supabase status --workdir packages/db -o env   # copia API_URL y ANON_KEY
 #   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<ANON_KEY>
 #   NEXT_PUBLIC_SITE_URL=http://localhost:3000
 #   SUPABASE_SECRET_KEY=<SERVICE_ROLE_KEY>   (solo servidor: crea reservas del link público)
+#   MAILPIT_URL=http://127.0.0.1:54324        (emails de desarrollo; en producción RESEND_API_KEY + EMAIL_FROM)
 
 pnpm dev        # http://localhost:3000
 ```
