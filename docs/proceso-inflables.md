@@ -1,7 +1,7 @@
 # Proceso actual de los hermanos (inflables)
 
 > Documento previo a la Fase 3, que exigen las directrices (sección 24). Describe **cómo trabajan hoy**,
-> sin app. Fuente: relato del dueño del proyecto (2026-11-11). Lo marcado como **[por confirmar]** falta
+> sin app. Fuente: relato del dueño del proyecto (2026-11-11), en tres bloques. **Entrevista cerrada.** Lo marcado como **[por confirmar]** falta
 > preguntarlo a los hermanos.
 
 ## 1. Zonas
@@ -12,7 +12,8 @@
 | B | Maipú |
 
 - Cada zona **incluye comunas vecinas** (Talagante, Lonquén, Peñaflor, etc.).
-  **[por confirmar]** la lista exacta de comunas de cada hermano.
+- **Decisión del dueño:** las zonas **no se amarran a las comunas de Chile**. Cada negocio escribe sus
+  propias zonas, porque otros clientes (y otros países) las definen de otra forma.
 - **Fuera de las dos zonas:** buscan un contacto que trabaje en esa zona y operan con el mismo sistema que
   usan entre hermanos. Es decir, los acuerdos no son solo entre hermanos: puede haber un acuerdo A ↔ primo C.
 
@@ -118,15 +119,37 @@ Esto no es una decisión; es para revisar con el dueño.
 
 ## 6. Logística
 
-- **Camiones:** el hermano A tiene 3 y el hermano B tiene 1. **[por confirmar]** que el de un camión sea B.
+- **Camiones:** el hermano A tiene 3 y el hermano B tiene 1.
 - Cada camión atiende en promedio **entre 3 y 6 eventos por día**. Depende mucho de las rutas.
 
-## 7. Pendiente de la entrevista
+- **Decisión del dueño:** si se pasa del tope de eventos por camión, **la app avisa pero no impide** la
+  reserva. El dueño decide cómo lo gestiona.
 
-Faltan los bloques 2 a 4 del guion de `docs/ESTADO.md` (sección 7.1):
+## 7. Catálogo, abono, condiciones y dolores (bloque 3, 2026-11-11)
 
-- **Catálogo:** juegos y adicionales de cada hermano, con cantidades y tiempos de montaje.
-- **Abono y cancelación.**
-- **Condiciones del evento:** enchufe, superficie y lluvia.
-- **Registros que llevan hoy.**
-- **Dolores.**
+- **Catálogo como una tienda en línea:** cada juego tiene precio y una ficha con sus datos importantes:
+  - capacidad de niños;
+  - dimensiones;
+  - tiempo estimado de armado y de desarme;
+  - si necesita electricidad;
+  - otros datos.
+- **Adicionales:** los juegos casi no tienen. En otros rubros sí (por ejemplo, mesa con 6 sillas más sillas
+  adicionales). El modelo actual de adicionales con stock ya cubre ese caso.
+- **Abono:**
+  - es un **porcentaje de la cotización**, con un valor predeterminado por negocio;
+  - a clientes habituales (iglesias, familia, amigos) **no se les cobra abono**, así que debe poder quitarse
+    por cliente.
+- **Condiciones del evento:** se le hacen preguntas al cliente, por ejemplo si hay enchufe cerca. Según la
+  respuesta, van preparados con extensiones eléctricas. Es muy raro que el terreno no sirva. Sobre la lluvia
+  no hay antecedentes.
+- **Registros:** hoy no anotan nada. Las actas de entrega y devolución les servirían.
+- **Dolores:**
+  1. **Se les quedan las extensiones eléctricas** en los eventos.
+  2. **Las direcciones no son claras:** tienen que llamar al cliente para pedirle la ubicación por WhatsApp.
+
+## 8. Decisiones generales del dueño surgidas en la entrevista
+
+- **País y moneda configurables por negocio.** Los decimales dependen de la moneda: el CLP no usa
+  decimales. Esto contradice las secciones 1 y 20 de las directrices (solo Chile, pesos enteros), así que va
+  en un ADR.
+- **Mostrar u ocultar los precios en la agenda pública:** cada negocio lo configura.
