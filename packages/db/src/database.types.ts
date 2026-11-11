@@ -1,7 +1,3 @@
-// Archivo generado desde la base de Supabase (no editar a mano).
-// Regenerar tras cada migración: `supabase gen types typescript --project-id <id>`
-// o con la herramienta generate_typescript_types del conector de Supabase.
-
 export type Json =
   | string
   | number
@@ -345,7 +341,29 @@ export type Database = {
           professional_id?: string
           share_bp?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "booking_item_shares_booking_item_id_fkey"
+            columns: ["booking_item_id"]
+            isOneToOne: false
+            referencedRelation: "booking_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_item_shares_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_item_shares_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       booking_items: {
         Row: {
@@ -886,7 +904,57 @@ export type Database = {
           settlement_id?: string | null
           share_bp?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "commission_entries_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_booking_item_id_fkey"
+            columns: ["booking_item_id"]
+            isOneToOne: false
+            referencedRelation: "booking_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "commission_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_entries_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "settlements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commission_rules: {
         Row: {
@@ -922,7 +990,29 @@ export type Database = {
           service_id?: string | null
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_rules_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_rules_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
@@ -1415,7 +1505,22 @@ export type Database = {
           service_id?: string
           share_bp?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_commission_roles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_commission_roles_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_resource_requirements: {
         Row: {
@@ -1536,7 +1641,22 @@ export type Database = {
           status?: string
           total_clp?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "settlements_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1552,34 +1672,6 @@ export type Database = {
         }
         Returns: string
       }
-      app_booking_commission_data: {
-        Args: { p_booking_id: string }
-        Returns: Json
-      }
-      app_bookings_missing_commissions: {
-        Args: { p_business_id: string; p_to: string }
-        Returns: string[]
-      }
-      app_create_settlement: {
-        Args: { p_business_id: string; p_end: string; p_start: string }
-        Returns: string
-      }
-      app_replace_booking_commissions: {
-        Args: { p_booking_id: string; p_lines: Json }
-        Returns: number
-      }
-      app_set_item_shares: {
-        Args: { p_booking_item_id: string; p_shares: Json }
-        Returns: undefined
-      }
-      app_set_service_recipe: {
-        Args: { p_roles: Json; p_service_id: string }
-        Returns: undefined
-      }
-      app_set_settlement_status: {
-        Args: { p_settlement_id: string; p_status: string }
-        Returns: undefined
-      }
       app_add_member: {
         Args: {
           p_branch_ids?: string[]
@@ -1588,6 +1680,10 @@ export type Database = {
           p_role: Database["public"]["Enums"]["membership_role"]
         }
         Returns: string
+      }
+      app_booking_commission_data: {
+        Args: { p_booking_id: string }
+        Returns: Json
       }
       app_booking_context: {
         Args: {
@@ -1598,6 +1694,12 @@ export type Database = {
         }
         Returns: Json
       }
+      app_booking_email_data: { Args: { p_booking_id: string }; Returns: Json }
+      app_bookings_missing_commissions: {
+        Args: { p_business_id: string; p_to: string }
+        Returns: string[]
+      }
+      app_claim_reminder: { Args: { p_booking_id: string }; Returns: boolean }
       app_create_booking: {
         Args: {
           p_addons?: Json
@@ -1630,20 +1732,38 @@ export type Database = {
         }
         Returns: string
       }
+      app_create_settlement: {
+        Args: { p_business_id: string; p_end: string; p_start: string }
+        Returns: string
+      }
       app_customer_cancel_booking: {
         Args: { p_booking_id: string }
         Returns: undefined
       }
-      app_booking_email_data: { Args: { p_booking_id: string }; Returns: Json }
-      app_claim_reminder: { Args: { p_booking_id: string }; Returns: boolean }
       app_expire_pending: { Args: never; Returns: number }
+      app_link_my_customers: { Args: never; Returns: number }
+      app_my_bookings: { Args: never; Returns: Json }
+      app_public_business: { Args: { p_slug: string }; Returns: Json }
       app_reminder_candidates: {
         Args: { p_limit?: number; p_now?: string }
         Returns: Json
       }
-      app_link_my_customers: { Args: never; Returns: number }
-      app_my_bookings: { Args: never; Returns: Json }
-      app_public_business: { Args: { p_slug: string }; Returns: Json }
+      app_replace_booking_commissions: {
+        Args: { p_booking_id: string; p_lines: Json }
+        Returns: number
+      }
+      app_set_item_shares: {
+        Args: { p_booking_item_id: string; p_shares: Json }
+        Returns: undefined
+      }
+      app_set_service_recipe: {
+        Args: { p_roles: Json; p_service_id: string }
+        Returns: undefined
+      }
+      app_set_settlement_status: {
+        Args: { p_settlement_id: string; p_status: string }
+        Returns: undefined
+      }
       app_use_booking_token: { Args: { p_token_hash: string }; Returns: Json }
     }
     Enums: {
