@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   const user = await getCurrentUser(db);
   const path = request.nextUrl.pathname;
 
-  if (!user && (path.startsWith('/panel') || path.startsWith('/mis-reservas'))) {
+  if (!user && (path.startsWith('/panel') || path.startsWith('/mis-reservas') || path.startsWith('/admin'))) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', path);

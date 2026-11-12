@@ -9,13 +9,15 @@ export type Member = {
   fullName: string | null;
   email: string | null;
   branchIds: string[];
+  /** Puede aprobar el acceso de soporte de la plataforma (el dueño siempre puede). */
+  canApproveSupport: boolean;
 };
 
 export async function listMembers(db: DbClient, businessId: string): Promise<Member[]> {
   const rows = unwrap(
     await db
       .from('memberships')
-      .select('id, user_id, role, profile:profiles(full_name, email), membership_branches(branch_id)')
+      .select('id, user_id, role, can_approve_support, profile:profiles(full_name, email), membership_branches(branch_id)')
       .eq('business_id', businessId)
       .order('created_at'),
   );
@@ -26,6 +28,7 @@ export async function listMembers(db: DbClient, businessId: string): Promise<Mem
     fullName: r.profile?.full_name ?? null,
     email: r.profile?.email ?? null,
     branchIds: r.membership_branches.map((b) => b.branch_id),
+    canApproveSupport: r.role === 'owner' || r.can_approve_support,
   }));
 }
 

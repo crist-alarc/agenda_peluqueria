@@ -5,6 +5,7 @@ import { ActionForm, SubmitButton } from '@/components/action-form';
 import { requireBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
 import { addMemberAction, removeMemberAction } from '../actions';
+import { setSupportApproverAction } from '../support-actions';
 
 export const metadata = { title: 'Equipo' };
 
@@ -73,6 +74,20 @@ export default async function TeamPage({ params }: { params: Promise<{ businessI
               <Badge variant="secondary">{t.roles[m.role]}</Badge>
               {m.branchIds.length > 0 && (
                 <span className="text-sm text-muted-foreground">{m.branchIds.map((id) => branchName.get(id)).join(', ')}</span>
+              )}
+              {m.role === 'owner' ? (
+                <Badge variant="outline">Aprueba soporte</Badge>
+              ) : membership.role === 'owner' ? (
+                <ActionForm action={setSupportApproverAction} aria-label={`Soporte: ${m.email}`}>
+                  <input type="hidden" name="businessId" value={business.id} />
+                  <input type="hidden" name="membershipId" value={m.membershipId} />
+                  <input type="hidden" name="value" value={m.canApproveSupport ? 'false' : 'true'} />
+                  <Button variant={m.canApproveSupport ? 'secondary' : 'ghost'} size="sm" aria-pressed={m.canApproveSupport}>
+                    {m.canApproveSupport ? 'Aprueba soporte' : 'Permitir aprobar soporte'}
+                  </Button>
+                </ActionForm>
+              ) : (
+                m.canApproveSupport && <Badge variant="outline">Aprueba soporte</Badge>
               )}
               {manage && m.userId !== user.id && canAssignRole(membership, m.role) && (
                 <ActionForm action={removeMemberAction} confirm={`¿Quitar a ${m.email} del equipo?`}>

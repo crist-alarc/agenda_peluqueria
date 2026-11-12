@@ -1,7 +1,7 @@
 import { parseServiceFields, type ServiceDetails, type ServiceField, type ServiceInput } from '@agenda/core';
 import type { DbClient } from '../client';
 import type { Tables } from '../database.types';
-import { assertOk, expectRows, unwrap } from '../errors';
+import { assertOk, expectRows, unwrap, unwrapMaybe } from '../errors';
 
 export type Service = Tables<'services'> & {
   service_resource_requirements: Tables<'service_resource_requirements'>[];
@@ -20,7 +20,7 @@ export async function listIndustryTemplates(db: DbClient): Promise<IndustryTempl
 
 /** Campos de la ficha de servicio que define la plantilla del rubro (fase 3A). */
 export async function getServiceFields(db: DbClient, industryCode: string): Promise<ServiceField[]> {
-  const row = unwrap(await db.from('industry_templates').select('config').eq('code', industryCode).maybeSingle());
+  const row = unwrapMaybe(await db.from('industry_templates').select('config').eq('code', industryCode).maybeSingle());
   const config = row?.config as { service_fields?: unknown } | null | undefined;
   return parseServiceFields(config?.service_fields);
 }

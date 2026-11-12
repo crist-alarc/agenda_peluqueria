@@ -10,6 +10,8 @@ export type MyBusiness = Pick<Business, 'id' | 'name' | 'slug' | 'booking_mode' 
 export type BusinessContext = {
   business: Business;
   membership: MembershipContext;
+  /** Puede aprobar el acceso de soporte de la plataforma (dueño o designado, ADR 0008). */
+  canApproveSupport: boolean;
 };
 
 /** Negocios donde la persona tiene una membresía (selector de contexto "Mi negocio"). */
@@ -29,7 +31,7 @@ export async function getBusinessContext(db: DbClient, businessId: string, userI
   const membership = unwrapMaybe(
     await db
       .from('memberships')
-      .select('id, role, membership_branches(branch_id), business:businesses(*)')
+      .select('id, role, can_approve_support, membership_branches(branch_id), business:businesses(*)')
       .eq('business_id', businessId)
       .eq('user_id', userId)
       .maybeSingle(),
@@ -41,6 +43,7 @@ export async function getBusinessContext(db: DbClient, businessId: string, userI
       role: membership.role,
       branchIds: membership.membership_branches.map((mb) => mb.branch_id),
     },
+    canApproveSupport: membership.role === 'owner' || membership.can_approve_support,
   };
 }
 
