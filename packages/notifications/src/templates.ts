@@ -27,19 +27,23 @@ export type BookingEmailData = {
   customerName: string;
   when: string;
   services: string[];
-  total: string;
+  /** null si el negocio no muestra precios (fase 3A): el email no menciona montos. */
+  total: string | null;
   /** Sucursal y dirección, si se conocen. */
   place?: string | null;
 };
+
+const totalHtml = (d: BookingEmailData) =>
+  d.total ? `<p style="margin:0 0 20px;color:#77706a">Total: ${escape(d.total)}</p>` : '<p style="margin:0 0 20px"></p>';
 
 const details = (d: BookingEmailData) =>
   `<p style="margin:0 0 4px"><strong>${escape(d.services.join(' + '))}</strong></p>
 <p style="margin:0 0 4px">${escape(d.when)}</p>
 ${d.place ? `<p style="margin:0 0 4px">${escape(d.place)}</p>` : ''}
-<p style="margin:0 0 20px;color:#77706a">Total: ${escape(d.total)}</p>`;
+${totalHtml(d)}`;
 
 const detailsText = (d: BookingEmailData) =>
-  `${d.services.join(' + ')}\n${d.when}\n${d.place ? `${d.place}\n` : ''}Total: ${d.total}`;
+  `${d.services.join(' + ')}\n${d.when}\n${d.place ? `${d.place}\n` : ''}${d.total ? `Total: ${d.total}` : ''}`;
 
 /** Email para confirmar una reserva pendiente con un botón (fase 2B). */
 export function confirmBookingEmail(
@@ -52,11 +56,11 @@ export function confirmBookingEmail(
 <p style="margin:0 0 12px">Para dejar lista tu reserva, confírmala con el botón. Tienes <strong>${d.holdMinutes} minutos</strong>; si no, el horario se libera.</p>
 <p style="margin:0 0 4px"><strong>${escape(services)}</strong></p>
 <p style="margin:0 0 4px">${escape(d.when)}</p>
-<p style="margin:0 0 20px;color:#77706a">Total: ${escape(d.total)}</p>
+${totalHtml(d)}
 <p style="margin:0 0 12px">${button(d.confirmUrl, 'Confirmar reserva')}</p>
 <p style="margin:0">${button(d.cancelUrl, 'Cancelar', false)}</p>`,
   );
-  const text = `Hola ${d.customerName},\n\nConfirma tu reserva en ${d.brand} (${services}, ${d.when}, total ${d.total}) en los próximos ${d.holdMinutes} minutos:\n${d.confirmUrl}\n\nPara cancelar: ${d.cancelUrl}\n`;
+  const text = `Hola ${d.customerName},\n\nConfirma tu reserva en ${d.brand} (${services}, ${d.when}${d.total ? `, total ${d.total}` : ''}) en los próximos ${d.holdMinutes} minutos:\n${d.confirmUrl}\n\nPara cancelar: ${d.cancelUrl}\n`;
   return { to: d.to, subject: `Confirma tu reserva en ${d.brand}`, html, text };
 }
 

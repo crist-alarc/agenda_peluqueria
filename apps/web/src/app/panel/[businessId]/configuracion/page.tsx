@@ -112,6 +112,16 @@ export default async function SettingsPage({ params }: { params: Promise<{ busin
               <Checkbox name="publicBookingEnabled" label="Link público activo" defaultChecked={business.public_booking_enabled} />
             </div>
             <div className="sm:col-span-2">
+              <Checkbox
+                name="showPublicPrices"
+                label="Mostrar precios en el link público"
+                defaultChecked={business.show_public_prices}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Si lo desactivas, el cliente ve el catálogo sin montos (útil cuando cotizas cada evento).
+              </p>
+            </div>
+            <div className="sm:col-span-2">
               <SubmitButton>Guardar</SubmitButton>
             </div>
           </ActionForm>

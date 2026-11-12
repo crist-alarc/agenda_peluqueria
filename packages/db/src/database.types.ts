@@ -653,8 +653,9 @@ export type Database = {
           address: string | null
           business_id: string
           commune: string | null
-          coverage_communes: string[]
           created_at: string
+          delivery_fee: number
+          delivery_mode: string
           id: string
           name: string
         }
@@ -663,8 +664,9 @@ export type Database = {
           address?: string | null
           business_id: string
           commune?: string | null
-          coverage_communes?: string[]
           created_at?: string
+          delivery_fee?: number
+          delivery_mode?: string
           id?: string
           name: string
         }
@@ -673,8 +675,9 @@ export type Database = {
           address?: string | null
           business_id?: string
           commune?: string | null
-          coverage_communes?: string[]
           created_at?: string
+          delivery_fee?: number
+          delivery_mode?: string
           id?: string
           name?: string
         }
@@ -778,6 +781,7 @@ export type Database = {
           reminder_enabled: boolean
           reminder_hours_before: number
           settlement_period: string
+          show_public_prices: boolean
           slot_interval_minutes: number
           slug: string
           timezone: string
@@ -803,6 +807,7 @@ export type Database = {
           reminder_enabled?: boolean
           reminder_hours_before?: number
           settlement_period?: string
+          show_public_prices?: boolean
           slot_interval_minutes?: number
           slug: string
           timezone?: string
@@ -828,6 +833,7 @@ export type Database = {
           reminder_enabled?: boolean
           reminder_hours_before?: number
           settlement_period?: string
+          show_public_prices?: boolean
           slot_interval_minutes?: number
           slug?: string
           timezone?: string
@@ -1067,6 +1073,54 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_zones: {
+        Row: {
+          active: boolean
+          branch_id: string
+          business_id: string
+          created_at: string
+          fee: number
+          id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          active?: boolean
+          branch_id: string
+          business_id: string
+          created_at?: string
+          fee?: number
+          id?: string
+          name: string
+          position?: number
+        }
+        Update: {
+          active?: boolean
+          branch_id?: string
+          business_id?: string
+          created_at?: string
+          fee?: number
+          id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_zones_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1430,6 +1484,7 @@ export type Database = {
           created_at: string
           id: string
           is_logistics: boolean
+          max_events_per_day: number | null
           name: string
           professional_id: string | null
           skills: string[]
@@ -1442,6 +1497,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_logistics?: boolean
+          max_events_per_day?: number | null
           name: string
           professional_id?: string | null
           skills?: string[]
@@ -1454,6 +1510,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_logistics?: boolean
+          max_events_per_day?: number | null
           name?: string
           professional_id?: string | null
           skills?: string[]
@@ -1528,6 +1585,48 @@ export type Database = {
           },
         ]
       }
+      service_photos: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          path: string
+          position: number
+          service_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          path: string
+          position?: number
+          service_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          path?: string
+          position?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_photos_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_photos_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_resource_requirements: {
         Row: {
           id: string
@@ -1569,7 +1668,9 @@ export type Database = {
           business_id: string
           created_at: string
           description: string | null
+          details: Json
           duration_minutes: number
+          full_day: boolean
           id: string
           name: string
           price: number
@@ -1582,7 +1683,9 @@ export type Database = {
           business_id: string
           created_at?: string
           description?: string | null
+          details?: Json
           duration_minutes: number
+          full_day?: boolean
           id?: string
           name: string
           price?: number
@@ -1595,7 +1698,9 @@ export type Database = {
           business_id?: string
           created_at?: string
           description?: string | null
+          details?: Json
           duration_minutes?: number
+          full_day?: boolean
           id?: string
           name?: string
           price?: number

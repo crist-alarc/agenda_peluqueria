@@ -23,6 +23,23 @@ describe('emails', () => {
     expect(m.text).toContain('https://app.cl/reserva/cancelar?t=def');
   });
 
+  it('si el negocio oculta los precios, el email no menciona montos (fase 3A)', () => {
+    const m = confirmBookingEmail({
+      to: 'a@b.cl',
+      brand: 'Inflables PH',
+      customerName: 'Ana',
+      when: 'sábado 21 de noviembre, 15:00',
+      services: ['Castillo inflable'],
+      total: null,
+      confirmUrl: 'https://app.cl/c',
+      cancelUrl: 'https://app.cl/x',
+      holdMinutes: 30,
+    });
+    expect(m.html).not.toContain('Total');
+    expect(m.text).not.toContain('total');
+    expect(m.text).toContain('Castillo inflable, sábado 21 de noviembre, 15:00)');
+  });
+
   it('elige el proveedor según la configuración', () => {
     expect(emailSenderFromEnv({ RESEND_API_KEY: 're_x' })).toBeInstanceOf(ResendSender);
     expect(emailSenderFromEnv({ MAILPIT_URL: 'http://localhost:54324' })).toBeInstanceOf(MailpitSender);

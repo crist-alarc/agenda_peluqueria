@@ -2,7 +2,7 @@
 
 > Documento vivo para retomar el trabajo en una sesión nueva sin perder contexto.
 > **Fuente de verdad:** `docs/DIRECTRICES.md` (v1.2, final según el dueño). Decisiones: `docs/adr/`.
-> Última actualización: 2026-11-11 (**Fase 3 en curso**: entrevista cerrada, 3·0 país y moneda hecha; sigue la 3A).
+> Última actualización: 2026-11-12 (**Fase 3 en curso**: 3·0 en producción, 3A programada; sigue la 3B).
 
 ## 1. Dónde estamos
 
@@ -15,8 +15,9 @@
 | 2C · Emails y recordatorios | En `main` (PR #8, ADR 0004): email con `.ics`, recordatorio configurable, "Sin confirmar", registro de envíos, tarea programada |
 | 2D · Comisiones | Hecha (ADR 0005): reglas, reparto entre profesionales (receta o manual por % o minutos), ajustes, liquidaciones cerradas inmutables, Excel y PDF para teléfono |
 | 3 · MVP inflables | **En curso.** Proceso documentado (`docs/proceso-inflables.md`); plan aprobado (ADR 0006, sección 7.5) |
-| 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. **Falta aplicar la migración en producción** (ver ADR 0006, sección 3) |
-| 3A · Catálogo de arriendo | **Siguiente** (aprobada) |
+| 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. PR #12, **en producción** desde el 2026-11-12 |
+| 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. **Falta producción** (migración `phase3a_rental_catalog`) |
+| 3B · Reserva de arriendo | **Siguiente** |
 
 **Quedó fuera de la Fase 2, a propósito:**
 
@@ -76,8 +77,8 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261115120000_phase3_currency` (**local, falta producción**), `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
-| Tests (3·0) | core 76 · notifications 6 · base de datos 99 · Playwright 29 |
+| Migraciones | `20261116120000_phase3a_rental_catalog` (**local, falta producción**), `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Tests (3A) | core 96 · notifications 7 · base de datos 117 · Playwright 34 (5 nuevos, corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
 ### Mapa del código (dónde está cada cosa)
@@ -92,6 +93,7 @@
 | Comisiones | `commissions.ts` | `repositories/commissions.ts` | `panel/[businessId]/comisiones/*`, `lib/commissions.ts`, `lib/settlement-report.ts` |
 | Emails | — | — | `packages/notifications` (`email.ts`, `templates.ts`, `ics.ts`) |
 | Dinero (moneda del negocio) | `money.ts` (`formatMoney`, `parseMoney`) | — | Configuración |
+| Arriendo (fase 3) | `rental.ts` (despacho, camiones, ficha), `availability.ts` (`parallel`, `fullDay`) | `repositories/catalog.ts`, `branches.ts`, `storage.ts` | `r/[slug]`, `r/[slug]/s/[serviceId]`, `panel/[businessId]/rental-actions.ts`, `sucursales/delivery.tsx`, `lib/catalog.ts` |
 | Validación de formularios | `schemas.ts` (Zod; los esquemas con montos reciben la moneda) | — | Server Actions en cada carpeta |
 
 ## 5. Cómo trabaja Claude en este repo (notas técnicas)
@@ -104,8 +106,9 @@
   carrera (PR #7).
 - **Migraciones:**
   1. Probar primero con `pnpm test:db`.
-  2. Aplicar en Supabase con el conector (`apply_migration`). **Avisar antes al dueño:** a veces Supabase
-     pide confirmación en su app de Claude y la tarjeta vence en unos 60 segundos.
+  2. Aplicar en Supabase con el conector (`apply_migration`). **Avisar antes al dueño:** Supabase pide
+     confirmación y la tarjeta vence en unos 60 segundos. **La tarjeta aparece en el navegador, no en la app
+     del teléfono** (2026-11-12): el dueño debe tener esta conversación abierta en el navegador.
   3. Verificar que remoto = local comparando huellas: md5 de `pg_get_functiondef`, políticas, columnas, etc.
   4. Regenerar `packages/db/src/database.types.ts` y revisar el Security Advisor.
 - **Pruebas de punta a punta en el entorno de Claude:** `ghcr.io` está bloqueado, así que no sirve
@@ -141,6 +144,10 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
+- 3A: **pendiente** aplicar `20261116120000_phase3a_rental_catalog` (crea el bucket `catalogo` de Storage) y
+  regenerar tipos. Los tipos del repo se escribieron a mano para la 3A: compararlos con los generados.
+- 3·0 (2026-11-12): `phase3_currency` aplicada. La huella de las 14 funciones y la de las columnas de
+  `public` son iguales a las locales. Tipos regenerados (sin diferencias). Security Advisor sin avisos nuevos.
 - **Recordatorios:** funcionando desde el 2026-11-11. La tarea programada responde 200
   (`{"ok":true,...}`). Para revisar: `select created, status_code, content from net._http_response order by
   created desc limit 3;`. Si vuelve a dar 401, el `CRON_SECRET` de Vercel y el de los secretos de la Edge
@@ -230,7 +237,7 @@ conversación (el resultado se guarda en `docs/proceso-inflables.md`):
 ### 7.5 Entregas (plan aprobado el 2026-11-11)
 
 0. **3·0 · País y moneda** (hecha, ADR 0006).
-1. **3A · Catálogo `rental`** (aprobada; detalle acordado):
+1. **3A · Catálogo `rental`** (hecha, ADR 0007):
    - ficha de cada juego como un servicio con datos del rubro (capacidad, dimensiones, armado, desarme,
      electricidad), fotos en Supabase Storage y unidades por etiqueta;
    - bloque por servicio: día completo o bloques de N horas (toro mecánico: 3 h + operador);

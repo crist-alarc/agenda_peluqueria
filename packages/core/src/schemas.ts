@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { COUNTRY_CODES, CURRENCY_CODES, type Currency, InvalidAmountError, parseMoney } from './money';
 import { ROLES } from './roles';
+import { DELIVERY_MODES } from './rental';
 import { FULL_SHARE, SETTLEMENT_PERIODS, formatPercent, parsePercent, sharesFromWeights, validateShares, type Share } from './commissions';
 import { findOverlaps, isValidTimeZone, timeToMinutes } from './time';
 
@@ -98,6 +99,26 @@ export const branchSchema = z.object({
   active: checkbox,
 });
 
+/** Cobro del despacho de una sucursal (fase 3A). */
+export const deliverySettingsSchema = (currency: Currency) =>
+  z.object({
+    businessId: uuid,
+    branchId: uuid,
+    deliveryMode: z.enum(DELIVERY_MODES, { message: 'Elige cómo se cobra el despacho' }),
+    deliveryFee: money(currency).default(0),
+  });
+
+/** Zona de despacho: nombre libre (no se amarra a las comunas) y su costo. */
+export const deliveryZoneSchema = (currency: Currency) =>
+  z.object({
+    businessId: uuid,
+    branchId: uuid,
+    zoneId: uuid.optional(),
+    name: z.string({ message: 'Indica el nombre de la zona' }).trim().min(1, 'Indica el nombre de la zona').max(80),
+    fee: money(currency).default(0),
+    active: checkbox,
+  });
+
 /** Horario semanal: tramos válidos, término posterior al inicio y sin solapes. */
 export const weeklyHoursSchema = z
   .array(z.object({ weekday, start: time, end: time }))
@@ -153,6 +174,11 @@ export const resourceSchema = z.object({
   name: name('El nombre del recurso'),
   skills,
   isLogistics: checkbox,
+  /** Tope de eventos por día de un recurso de logística (fase 3A). Vacío = sin tope. */
+  maxEventsPerDay: z
+    .union([z.literal(''), z.coerce.number().int('Debe ser un número entero').min(1, 'Mínimo 1').max(100, 'Máximo 100')])
+    .optional()
+    .transform((v) => (v === '' || v === undefined ? null : v)),
   active: checkbox,
   // Datos del profesional (solo recursos persona)
   professionalEmail: z
@@ -188,6 +214,8 @@ export const serviceSchema = (currency: Currency) =>
     price: money(currency),
     bufferBeforeMinutes: minutes('La holgura previa', 0, 1440).default(0),
     bufferAfterMinutes: minutes('La holgura posterior', 0, 1440).default(0),
+    /** Arriendo por día completo (solo negocios en modo `rental`). */
+    fullDay: checkbox,
     active: checkbox,
     requirements: z.array(requirementSchema).max(10).default([]),
   });
@@ -317,6 +345,8 @@ export const bookingSettingsSchema = z.object({
   maxAdvanceDays: z.coerce.number().int().min(1).max(365),
   cancellationHours: z.coerce.number().int().min(0).max(168),
   publicBookingEnabled: checkbox,
+  /** Mostrar precios en el link público (fase 3A). */
+  showPublicPrices: checkbox,
 });
 
 export const confirmationSettingsSchema = z.object({
