@@ -32,14 +32,14 @@ import * as repo from '@agenda/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { fail, formToObject, jsonField, ok, toActionError, type ActionState } from '@/lib/actions';
-import { requireBusiness } from '@/lib/session';
+import { requireWritableBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
 
 const idSchema = z.uuid();
 
 async function contextFor(form: FormData, permission?: Permission) {
   const businessId = idSchema.parse(form.get('businessId'));
-  const ctx = await requireBusiness(businessId);
+  const ctx = await requireWritableBusiness(businessId);
   if (permission && !can(ctx.membership, permission)) throw new repo.DbError(t.errors.forbidden, '42501');
   return ctx;
 }

@@ -18,13 +18,20 @@ export interface CurrencyInfo {
   locale: string;
 }
 
-/** Monedas habilitadas en la app. Debe coincidir con el check de `businesses.currency`. */
+/** Monedas que la app sabe mostrar y leer. */
 export const CURRENCIES = {
   CLP: { code: 'CLP', name: 'Peso chileno', minorUnits: 0, locale: 'es-CL' },
+  USD: { code: 'USD', name: 'Dólar estadounidense', minorUnits: 2, locale: 'es-CL' },
 } as const satisfies Record<string, CurrencyInfo>;
 
 export type CurrencyCode = keyof typeof CURRENCIES;
-export const CURRENCY_CODES = Object.keys(CURRENCIES) as [CurrencyCode, ...CurrencyCode[]];
+/** Monedas con que puede operar un negocio (su agenda). Debe coincidir con el check de `businesses.currency`. */
+export const CURRENCY_CODES = ['CLP'] as [CurrencyCode, ...CurrencyCode[]];
+/**
+ * Monedas en que la plataforma cobra la suscripción (ADR 0009). Es independiente de la moneda
+ * del negocio: una peluquería que opera en otra moneda puede pagar su plan en dólares.
+ */
+export const BILLING_CURRENCY_CODES = ['CLP', 'USD'] as [CurrencyCode, ...CurrencyCode[]];
 
 /** Países habilitados (ISO 3166-1). Debe coincidir con el check de `businesses.country`. */
 export const COUNTRIES = {

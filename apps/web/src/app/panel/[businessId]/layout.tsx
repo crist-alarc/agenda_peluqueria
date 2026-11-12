@@ -85,6 +85,16 @@ export default async function BusinessLayout({
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
+        {business.suspended_at && (
+          <div role="alert" className="mb-6 rounded-lg border border-destructive/50 px-4 py-3 text-sm">
+            Tu negocio está suspendido{business.suspension_reason ? `: ${business.suspension_reason}` : ''}. El panel está en solo lectura y
+            el link público no recibe reservas. Revisa los detalles en{' '}
+            <Link href={`${base}/plan`} className="font-medium underline underline-offset-2">
+              Plan
+            </Link>
+            .
+          </div>
+        )}
         {pendingSupport && (
           <div role="status" className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-access-pending/50 px-4 py-3 text-sm">
             <span className="size-2 rounded-full bg-access-pending" aria-hidden />

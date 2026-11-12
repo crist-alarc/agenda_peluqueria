@@ -24,6 +24,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <NavLink href="/admin/clientes" variant="platform">
               Clientes
             </NavLink>
+            <NavLink href="/admin/planes" variant="platform">
+              Planes
+            </NavLink>
+            <NavLink href="/admin/facturacion" variant="platform">
+              Facturación
+            </NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm text-platform-foreground/80">
             <span className="hidden truncate sm:inline">{user.email}</span>

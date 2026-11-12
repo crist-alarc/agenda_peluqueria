@@ -725,20 +725,29 @@ export type Database = {
       }
       business_subscriptions: {
         Row: {
+          billing_entity_id: string | null
           business_id: string
+          currency: string
           plan_code: string
+          plan_version_id: string
           started_at: string
           status: string
         }
         Insert: {
+          billing_entity_id?: string | null
           business_id: string
+          currency: string
           plan_code: string
+          plan_version_id: string
           started_at?: string
           status?: string
         }
         Update: {
+          billing_entity_id?: string | null
           business_id?: string
+          currency?: string
           plan_code?: string
+          plan_version_id?: string
           started_at?: string
           status?: string
         }
@@ -784,6 +793,8 @@ export type Database = {
           show_public_prices: boolean
           slot_interval_minutes: number
           slug: string
+          suspended_at: string | null
+          suspension_reason: string | null
           timezone: string
         }
         Insert: {
@@ -810,6 +821,8 @@ export type Database = {
           show_public_prices?: boolean
           slot_interval_minutes?: number
           slug: string
+          suspended_at?: string | null
+          suspension_reason?: string | null
           timezone?: string
         }
         Update: {
@@ -836,6 +849,8 @@ export type Database = {
           show_public_prices?: boolean
           slot_interval_minutes?: number
           slug?: string
+          suspended_at?: string | null
+          suspension_reason?: string | null
           timezone?: string
         }
         Relationships: [
@@ -1325,29 +1340,6 @@ export type Database = {
           },
         ]
       }
-      platform_admins: {
-        Row: {
-          created_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "platform_admins_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       plan_features: {
         Row: {
           enabled: boolean
@@ -1379,24 +1371,59 @@ export type Database = {
       }
       plans: {
         Row: {
+          active: boolean
           code: string
+          current_version_id: string | null
           description: string | null
           is_public: boolean
           name: string
+          offered_countries: string[]
+          sort_order: number
         }
         Insert: {
+          active?: boolean
           code: string
+          current_version_id?: string | null
           description?: string | null
           is_public?: boolean
           name: string
+          offered_countries?: string[]
+          sort_order?: number
         }
         Update: {
+          active?: boolean
           code?: string
+          current_version_id?: string | null
           description?: string | null
           is_public?: boolean
           name?: string
+          offered_countries?: string[]
+          sort_order?: number
         }
         Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professionals: {
         Row: {
@@ -1806,14 +1833,14 @@ export type Database = {
         Insert: {
           admin_user_id: string
           business_id: string
-          id?: number
+          id?: never
           request_id: string
           viewed_at?: string
         }
         Update: {
           admin_user_id?: string
           business_id?: string
-          id?: number
+          id?: never
           request_id?: string
           viewed_at?: string
         }
@@ -1908,27 +1935,258 @@ export type Database = {
           },
         ]
       }
+      billing_entities: {
+        Row: {
+          active: boolean
+          country: string
+          created_at: string
+          id: string
+          name: string
+          tax_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          country: string
+          created_at?: string
+          id?: string
+          name: string
+          tax_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          country?: string
+          created_at?: string
+          id?: string
+          name?: string
+          tax_id?: string | null
+        }
+        Relationships: [
+
+        ]
+      }
+      business_feature_overrides: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          ended_at: string | null
+          expires_at: string | null
+          feature: string
+          id: string
+          limit_value: number | null
+          note: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          enabled: boolean
+          ended_at?: string | null
+          expires_at?: string | null
+          feature: string
+          id?: string
+          limit_value?: number | null
+          note: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          ended_at?: string | null
+          expires_at?: string | null
+          feature?: string
+          id?: string
+          limit_value?: number | null
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_feature_overrides_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          features: Json
+          id: string
+          note: string | null
+          plan_code: string
+          prices: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          features: Json
+          id?: string
+          note?: string | null
+          plan_code: string
+          prices?: Json
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          features?: Json
+          id?: string
+          note?: string | null
+          plan_code?: string
+          prices?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_versions_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      subscription_periods: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          ends_on: string | null
+          id: string
+          kind: string
+          monthly_net: number | null
+          note: string | null
+          plan_version_id: string | null
+          starts_on: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          ends_on?: string | null
+          id?: string
+          kind: string
+          monthly_net?: number | null
+          note?: string | null
+          plan_version_id?: string | null
+          starts_on: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          ends_on?: string | null
+          id?: string
+          kind?: string
+          monthly_net?: number | null
+          note?: string | null
+          plan_version_id?: string | null
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_periods_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_periods_plan_version_id_fkey"
+            columns: ["plan_version_id"]
+            isOneToOne: false
+            referencedRelation: "plan_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_rules: {
+        Row: {
+          active: boolean
+          billing_entity_id: string
+          client_country: string | null
+          created_at: string
+          currency: string
+          document_type: string
+          id: string
+          tax_rate_bp: number
+        }
+        Insert: {
+          active?: boolean
+          billing_entity_id: string
+          client_country?: string | null
+          created_at?: string
+          currency: string
+          document_type: string
+          id?: string
+          tax_rate_bp: number
+        }
+        Update: {
+          active?: boolean
+          billing_entity_id?: string
+          client_country?: string | null
+          created_at?: string
+          currency?: string
+          document_type?: string
+          id?: string
+          tax_rate_bp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_rules_billing_entity_id_fkey"
+            columns: ["billing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "billing_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      app_admin_cancel_support: { Args: { p_request_id: string }; Returns: undefined }
-      app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
-      app_admin_request_support: {
-        Args: { p_business_id: string; p_hours: number; p_reason: string }
+      app_admin_add_override: {
+        Args: { p_business_id: string; p_enabled: boolean; p_expires_at: string | null; p_feature: string; p_limit: number | null; p_note: string }
         Returns: string
       }
-      app_admin_support_snapshot: { Args: { p_business_id: string }; Returns: Json }
-      app_decide_support_request: {
-        Args: { p_approve: boolean; p_hours?: number; p_request_id: string }
+      app_admin_billing_setup: { Args: never; Returns: Json }
+      app_admin_business_plan: { Args: { p_business_id: string }; Returns: Json }
+      app_admin_change_plan: {
+        Args: { p_business_id: string; p_note?: string; p_plan_code: string }
         Returns: undefined
       }
-      app_revoke_support_access: { Args: { p_request_id: string }; Returns: undefined }
-      app_set_support_approver: {
-        Args: { p_membership_id: string; p_value: boolean }
+      app_admin_end_override: { Args: { p_override_id: string }; Returns: undefined }
+      app_admin_migrate_plan_version: {
+        Args: { p_from_version_id: string; p_note?: string }
+        Returns: number
+      }
+      app_admin_plans: { Args: never; Returns: Json }
+      app_admin_reactivate: { Args: { p_business_id: string; p_note?: string }; Returns: undefined }
+      app_admin_save_billing_entity: {
+        Args: { p_active: boolean; p_id: string; p_name: string; p_tax_id: string }
         Returns: undefined
       }
+      app_admin_save_plan: {
+        Args: { p_active: boolean; p_code: string; p_description: string; p_features: Json; p_is_public: boolean; p_name: string; p_note?: string; p_offered_countries: string[]; p_prices: Json }
+        Returns: string
+      }
+      app_admin_save_tax_rule: {
+        Args: { p_active: boolean; p_currency: string; p_document_type: string; p_id: string; p_tax_rate_bp: number }
+        Returns: undefined
+      }
+      app_admin_suspend: { Args: { p_business_id: string; p_reason: string }; Returns: undefined }
+      app_my_plan: { Args: { p_business_id: string }; Returns: Json }
+      app_public_plans: { Args: { p_country?: string }; Returns: Json }
       app_add_commission_adjustment: {
         Args: {
           p_amount: number
@@ -1946,6 +2204,19 @@ export type Database = {
           p_role: Database["public"]["Enums"]["membership_role"]
         }
         Returns: string
+      }
+      app_admin_cancel_support: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
+      app_admin_request_support: {
+        Args: { p_business_id: string; p_hours: number; p_reason: string }
+        Returns: string
+      }
+      app_admin_support_snapshot: {
+        Args: { p_business_id: string }
+        Returns: Json
       }
       app_booking_commission_data: {
         Args: { p_booking_id: string }
@@ -1994,6 +2265,7 @@ export type Database = {
           p_branch_name: string
           p_business_name: string
           p_industry_code: string
+          p_plan_code?: string
           p_timezone?: string
         }
         Returns: string
@@ -2004,6 +2276,10 @@ export type Database = {
       }
       app_customer_cancel_booking: {
         Args: { p_booking_id: string }
+        Returns: undefined
+      }
+      app_decide_support_request: {
+        Args: { p_approve: boolean; p_hours?: number; p_request_id: string }
         Returns: undefined
       }
       app_expire_pending: { Args: never; Returns: number }
@@ -2018,6 +2294,10 @@ export type Database = {
         Args: { p_booking_id: string; p_lines: Json }
         Returns: number
       }
+      app_revoke_support_access: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       app_set_item_shares: {
         Args: { p_booking_item_id: string; p_shares: Json }
         Returns: undefined
@@ -2028,6 +2308,10 @@ export type Database = {
       }
       app_set_settlement_status: {
         Args: { p_settlement_id: string; p_status: string }
+        Returns: undefined
+      }
+      app_set_support_approver: {
+        Args: { p_membership_id: string; p_value: boolean }
         Returns: undefined
       }
       app_use_booking_token: { Args: { p_token_hash: string }; Returns: Json }

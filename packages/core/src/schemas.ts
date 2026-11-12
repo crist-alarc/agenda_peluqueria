@@ -71,6 +71,8 @@ export const createBusinessSchema = z.object({
   branchAddress: optionalText(200),
   branchCommune: optionalText(80),
   timezone: z.string().refine(isValidTimeZone, 'Zona horaria no válida').default('America/Santiago'),
+  /** Plan elegido al registrarse (ADR 0009). */
+  planCode: z.string({ message: 'Elige un plan' }).trim().regex(/^[a-z][a-z0-9_]{1,30}$/, 'Elige un plan').default('base'),
 });
 export type CreateBusinessInput = z.infer<typeof createBusinessSchema>;
 

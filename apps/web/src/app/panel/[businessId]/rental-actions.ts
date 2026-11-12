@@ -19,13 +19,13 @@ import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { fail, formToObject, ok, toActionError, type ActionState } from '@/lib/actions';
-import { requireBusiness } from '@/lib/session';
+import { requireWritableBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
 
 const idSchema = z.uuid();
 
 async function context(form: FormData) {
-  return requireBusiness(idSchema.parse(form.get('businessId')));
+  return requireWritableBusiness(idSchema.parse(form.get('businessId')));
 }
 
 // ---------------------------------------------------------------------------
