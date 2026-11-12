@@ -15,7 +15,7 @@
 | 2C · Emails y recordatorios | En `main` (PR #8, ADR 0004): email con `.ics`, recordatorio configurable, "Sin confirmar", registro de envíos, tarea programada |
 | 2D · Comisiones | Hecha (ADR 0005): reglas, reparto entre profesionales (receta o manual por % o minutos), ajustes, liquidaciones cerradas inmutables, Excel y PDF para teléfono |
 | 3 · MVP inflables | **En curso.** Proceso documentado (`docs/proceso-inflables.md`); plan aprobado (ADR 0006, sección 7.5) |
-| 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. **Falta aplicar la migración en producción** (ver ADR 0006, sección 3) |
+| 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. PR #12, **en producción** desde el 2026-11-12 |
 | 3A · Catálogo de arriendo | **Siguiente** (aprobada) |
 
 **Quedó fuera de la Fase 2, a propósito:**
@@ -76,7 +76,7 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261115120000_phase3_currency` (**local, falta producción**), `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Migraciones | `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
 | Tests (3·0) | core 76 · notifications 6 · base de datos 99 · Playwright 29 |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -104,8 +104,9 @@
   carrera (PR #7).
 - **Migraciones:**
   1. Probar primero con `pnpm test:db`.
-  2. Aplicar en Supabase con el conector (`apply_migration`). **Avisar antes al dueño:** a veces Supabase
-     pide confirmación en su app de Claude y la tarjeta vence en unos 60 segundos.
+  2. Aplicar en Supabase con el conector (`apply_migration`). **Avisar antes al dueño:** Supabase pide
+     confirmación y la tarjeta vence en unos 60 segundos. **La tarjeta aparece en el navegador, no en la app
+     del teléfono** (2026-11-12): el dueño debe tener esta conversación abierta en el navegador.
   3. Verificar que remoto = local comparando huellas: md5 de `pg_get_functiondef`, políticas, columnas, etc.
   4. Regenerar `packages/db/src/database.types.ts` y revisar el Security Advisor.
 - **Pruebas de punta a punta en el entorno de Claude:** `ghcr.io` está bloqueado, así que no sirve
@@ -141,6 +142,8 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
+- 3·0 (2026-11-12): `phase3_currency` aplicada. La huella de las 14 funciones y la de las columnas de
+  `public` son iguales a las locales. Tipos regenerados (sin diferencias). Security Advisor sin avisos nuevos.
 - **Recordatorios:** funcionando desde el 2026-11-11. La tarea programada responde 200
   (`{"ok":true,...}`). Para revisar: `select created, status_code, content from net._http_response order by
   created desc limit 3;`. Si vuelve a dar 401, el `CRON_SECRET` de Vercel y el de los secretos de la Edge
