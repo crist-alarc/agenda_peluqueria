@@ -3,6 +3,7 @@ import type { DbClient } from '../client';
 import type { Tables } from '../database.types';
 import { expectRows, unwrap, unwrapMaybe } from '../errors';
 
+/** Con `showPrices` en false, los montos llegan como null (la base no los entrega). */
 export type PublicBusiness = {
   id: string;
   name: string;
@@ -13,10 +14,32 @@ export type PublicBusiness = {
   bookingMode: string;
   maxAdvanceDays: number;
   cancellationHours: number;
-  branches: Array<{ id: string; name: string; address: string | null; commune: string | null }>;
-  services: Array<{ id: string; name: string; description: string | null; durationMinutes: number; price: number; needsPerson: boolean }>;
+  showPrices: boolean;
+  /** Campos de la ficha de servicio de la plantilla del rubro (sin validar). */
+  serviceFields: unknown;
+  branches: Array<{
+    id: string;
+    name: string;
+    address: string | null;
+    commune: string | null;
+    deliveryMode: 'included' | 'fixed' | 'by_zone';
+    deliveryFee: number | null;
+    zones: Array<{ id: string; name: string; fee: number | null }>;
+  }>;
+  services: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    durationMinutes: number;
+    price: number | null;
+    fullDay: boolean;
+    details: Record<string, unknown>;
+    /** Rutas dentro del bucket "catalogo". */
+    photos: string[];
+    needsPerson: boolean;
+  }>;
   people: Array<{ id: string; name: string; branchId: string }>;
-  addons: Array<{ id: string; name: string; description: string | null; price: number }>;
+  addons: Array<{ id: string; name: string; description: string | null; price: number | null }>;
 };
 
 /** Datos públicos para el link de reservas. null si no existe o está desactivado. */
@@ -131,6 +154,7 @@ export async function updateBookingSettings(
     max_advance_days: number;
     cancellation_hours: number;
     public_booking_enabled: boolean;
+    show_public_prices: boolean;
   },
 ): Promise<void> {
   expectRows(unwrap(await db.from('businesses').update(values).eq('id', businessId).select('id')));
@@ -244,6 +268,8 @@ export type BookingEmailData = {
   businessSlug: string;
   timezone: string;
   currency: string;
+  /** El negocio muestra precios al cliente (fase 3A). */
+  showPrices?: boolean;
   branchName: string;
   branchAddress: string;
   settings: {

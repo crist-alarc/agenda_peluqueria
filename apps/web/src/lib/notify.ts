@@ -41,7 +41,7 @@ function common(b: BookingEmailData) {
     customerName: (b.customerName ?? '').split(' ')[0] || 'hola',
     when: formatDateTime(b.startsAt, b.timezone),
     services: b.services ?? [],
-    total: formatMoney(b.total, b.currency),
+    total: b.showPrices === false ? null : formatMoney(b.total, b.currency),
     place: [b.branchName, b.branchAddress].filter(Boolean).join(' · ') || null,
     cancellationHours: b.settings.cancellationHours,
   };

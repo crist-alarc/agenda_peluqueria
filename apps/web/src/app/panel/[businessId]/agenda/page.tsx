@@ -7,12 +7,13 @@ import {
   isIsoDate,
   localDate,
   localTime,
+  logisticsLoad,
   nextStatuses,
   type AttendanceState,
   type ReminderSettings,
 } from '@agenda/core';
 import { listAddons, listAgenda, listBranches, listResources, listServices, type AgendaBooking } from '@agenda/db';
-import { Badge, Button, Card, CardContent, EmptyState, Input, PageHeader, Select } from '@agenda/ui';
+import { Alert, Badge, Button, Card, CardContent, EmptyState, Input, PageHeader, Select } from '@agenda/ui';
 import Link from 'next/link';
 import { ActionForm, SubmitButton } from '@/components/action-form';
 import { BookingWizard } from '@/components/booking-wizard';
@@ -49,6 +50,7 @@ export default async function AgendaPage({
   const dayBookings = bookings.filter((b) => localDate(b.starts_at, tz) === date);
   const branchResources = resources.filter((r) => r.branch_id === branch.id && r.active);
   const people = branchResources.filter((r) => r.type === 'person');
+  const rental = business.booking_mode === 'rental';
   const manage = can(membership, 'bookings.manage');
   const base = `/panel/${business.id}/agenda`;
   const now = new Date().toISOString();
@@ -69,13 +71,21 @@ export default async function AgendaPage({
   const unconfirmed = dayBookings.filter((b) => attendanceOf(b) === 'unconfirmed').length;
   const qs = (d: string, extra = '') => `${base}?fecha=${d}&sucursal=${branch.id}${extra}`;
 
-  // Columnas: cada persona (o recurso) con sus reservas del día
-  const columns = (people.length > 0 ? people : branchResources).map((r) => ({
+  // Columnas: cada persona (o recurso) con sus reservas del día. En arriendo, cada juego.
+  const columnResources = rental
+    ? branchResources.filter((r) => !r.is_logistics)
+    : people.length > 0
+      ? people
+      : branchResources;
+  const columns = columnResources.map((r) => ({
     resource: r,
     bookings: dayBookings.filter((b) => b.allocations.some((a) => a.resource_id === r.id)),
   }));
   const unassigned = dayBookings.filter((b) => !columns.some((c) => c.bookings.includes(b)));
   const active = dayBookings.filter((b) => b.status !== 'cancelled' && b.status !== 'no_show');
+  // Camiones (fase 3A): avisa si los eventos del día superan lo que alcanzan a atender; no bloquea.
+  const trucks = branchResources.filter((r) => r.is_logistics);
+  const load = rental ? logisticsLoad(active.length, trucks.map((r) => ({ maxEventsPerDay: r.max_events_per_day }))) : null;
 
   let wizard = null;
   if (manage && sp.nueva) {
@@ -93,6 +103,7 @@ export default async function AgendaPage({
                 id: s.id,
                 name: s.name,
                 durationMinutes: s.duration_minutes,
+                durationLabel: rental && s.full_day ? 'Día completo' : undefined,
                 priceLabel: formatMoney(s.price, business.currency),
                 needsPerson: s.service_resource_requirements.some((q) => q.resource_type === 'person'),
               }))}
@@ -102,6 +113,7 @@ export default async function AgendaPage({
             initialDate={date >= today ? date : today}
             getSlots={getReceptionSlots}
             book={bookReception}
+            rental={rental}
             searchCustomers={searchCustomersAction.bind(null, business.id)}
           />
         </CardContent>
@@ -155,6 +167,14 @@ export default async function AgendaPage({
           Ver
         </Button>
       </form>
+
+      {load && (load.level === 'full' || load.level === 'over') && (
+        <Alert variant={load.level === 'over' ? 'destructive' : 'default'} className="mb-4">
+          {load.level === 'over'
+            ? `Hay ${load.events} eventos y los camiones alcanzan para ${load.capacity}. Revisa cómo vas a cubrir las rutas.`
+            : `Los camiones están completos: ${load.events} eventos de ${load.capacity}.`}
+        </Alert>
+      )}
 
       {wizard}
 

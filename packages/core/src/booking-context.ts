@@ -16,6 +16,8 @@ export type ContextService = {
   bufferBeforeMinutes: number;
   bufferAfterMinutes: number;
   requirements: Requirement[];
+  /** Arriendo por día completo (modo `rental`). */
+  fullDay?: boolean;
 };
 
 export type ContextResource = {
@@ -42,6 +44,8 @@ export type BookingContext = {
     name: string;
     timezone: string;
     currency: string;
+    /** Modo de reserva del negocio; en `rental` los servicios ocurren en paralelo. */
+    booking_mode?: string;
     slot_interval_minutes: number;
     min_advance_minutes: number;
     max_advance_days: number;
@@ -99,6 +103,7 @@ export function buildAvailabilityInput(ctx: BookingContext, req: SlotRequest): A
     services,
     preferredPersonId: req.preferredPersonId ?? null,
     addons,
+    parallel: ctx.business.booking_mode === 'rental',
   };
 }
 

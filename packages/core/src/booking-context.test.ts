@@ -65,6 +65,13 @@ describe('contexto de reservas', () => {
     expect(slots).toEqual([]);
   });
 
+  it('en modo arriendo los servicios van en paralelo', () => {
+    const req = { date: '2026-11-18', serviceIds: [ctx.services[0]!.id], now: '2026-11-17T12:00:00Z' };
+    expect(buildAvailabilityInput(ctx, req).parallel).toBe(false);
+    const rental = { ...ctx, business: { ...ctx.business, booking_mode: 'rental' } };
+    expect(buildAvailabilityInput(rental, req).parallel).toBe(true);
+  });
+
   it('utilidades de fechas locales', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(upcomingDates('2026-11-18T02:00:00Z', 'America/Santiago', 3)).toEqual(['2026-11-17', '2026-11-18', '2026-11-19']);

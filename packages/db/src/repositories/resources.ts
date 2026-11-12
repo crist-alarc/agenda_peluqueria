@@ -50,6 +50,7 @@ export async function createResource(db: DbClient, input: ResourceInput): Promis
       name: input.name,
       skills: input.skills,
       is_logistics: input.isLogistics,
+      max_events_per_day: input.isLogistics ? input.maxEventsPerDay : null,
       professional_id: professionalId,
     })
     .select('id')
@@ -70,6 +71,7 @@ export async function updateResource(db: DbClient, resourceId: string, input: Re
           name: input.name,
           skills: input.skills,
           is_logistics: input.isLogistics,
+          max_events_per_day: input.isLogistics ? input.maxEventsPerDay : null,
           active: input.active,
         })
         .eq('id', resourceId)

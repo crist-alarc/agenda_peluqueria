@@ -82,6 +82,9 @@ export default async function ResourcesPage({ params }: { params: Promise<{ busi
                 <div className="flex items-center gap-4 sm:col-span-2">
                   <Checkbox name="isLogistics" label="Es un recurso de logística (camioneta, equipo de montaje)" />
                 </div>
+                <Field label="Eventos por día (logística)" hint="Ej. 6 eventos en la ruta de un camión. Vacío = sin tope.">
+                  <Input name="maxEventsPerDay" type="number" min={1} max={100} inputMode="numeric" />
+                </Field>
                 <input type="hidden" name="active" value="true" />
                 <div className="sm:col-span-2">
                   <SubmitButton>Crear recurso</SubmitButton>
@@ -134,7 +137,11 @@ function ResourceCard({
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 p-4">
           <span className="font-medium">{r.name}</span>
           <Badge variant="secondary">{t.resourceTypes[r.type]}</Badge>
-          {r.is_logistics && <Badge variant="outline">Logística</Badge>}
+          {r.is_logistics && (
+            <Badge variant="outline">
+              Logística{r.max_events_per_day ? ` · ${r.max_events_per_day} eventos/día` : ''}
+            </Badge>
+          )}
           {!r.active && <Badge variant="muted">Inactivo</Badge>}
           {r.skills.map((s) => (
             <Badge key={s} variant="outline">
@@ -182,6 +189,19 @@ function ResourceCard({
                   <Checkbox name="active" label="Activo" defaultChecked={r.active} />
                   <Checkbox name="isLogistics" label="Recurso de logística" defaultChecked={r.is_logistics} />
                 </div>
+                <Field
+                  label="Eventos por día (logística)"
+                  hint="Ej. un camión que alcanza 6 eventos en su ruta. Al superarlo, la agenda avisa. Vacío = sin tope."
+                >
+                  <Input
+                    name="maxEventsPerDay"
+                    type="number"
+                    min={1}
+                    max={100}
+                    inputMode="numeric"
+                    defaultValue={r.max_events_per_day ?? ''}
+                  />
+                </Field>
                 <div className="sm:col-span-2">
                   <h3 className="mb-1 text-sm font-semibold">Horario de disponibilidad</h3>
                   <p className="mb-2 text-xs text-muted-foreground">Si lo dejas vacío, se usará el horario de la sucursal.</p>

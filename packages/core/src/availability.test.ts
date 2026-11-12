@@ -178,6 +178,104 @@ describe('motor de disponibilidad', () => {
   });
 });
 
+describe('modo arriendo (fase 3)', () => {
+  // Inflables: horario amplio, juegos como equipos con etiqueta, toro con operador.
+  const castillo1: AvailabilityResource = { id: 'castillo-1', type: 'equipment', skills: ['castillo'], professionalId: null, hours: [] };
+  const castillo2: AvailabilityResource = { id: 'castillo-2', type: 'equipment', skills: ['castillo'], professionalId: null, hours: [] };
+  const toro: AvailabilityResource = { id: 'toro', type: 'equipment', skills: ['toro'], professionalId: null, hours: [] };
+  const operador: AvailabilityResource = { id: 'op', type: 'person', skills: ['operador'], professionalId: 'p-op', hours: [] };
+
+  const arriendoCastillo = {
+    id: 'castillo',
+    durationMinutes: 1440,
+    bufferBeforeMinutes: 60,
+    bufferAfterMinutes: 60,
+    fullDay: true,
+    requirements: [{ resourceType: 'equipment' as const, quantity: 1, requiredSkill: 'castillo' }],
+  };
+  const arriendoToro = {
+    id: 'toro',
+    durationMinutes: 180,
+    bufferBeforeMinutes: 60,
+    bufferAfterMinutes: 60,
+    requirements: [
+      { resourceType: 'equipment' as const, quantity: 1, requiredSkill: 'toro' },
+      { resourceType: 'person' as const, quantity: 1, requiredSkill: 'operador' },
+    ],
+  };
+  const rental = (overrides: Partial<AvailabilityInput> = {}) =>
+    input({
+      parallel: true,
+      slotIntervalMinutes: 60,
+      branchHours: [{ weekday: 3, start: '09:00', end: '21:00' }],
+      resources: [castillo1, castillo2, toro, operador],
+      services: [arriendoCastillo],
+      ...overrides,
+    });
+  // Día local completo del 18-nov-2026 en Santiago (UTC-3)
+  const DAY_START = '2026-11-18T03:00:00.000Z';
+  const DAY_END = '2026-11-19T03:00:00.000Z';
+
+  it('un juego de día completo ocupa todo el día aunque se entregue en la tarde', () => {
+    const slot = findSlots(rental()).find((s) => local(s.startsAt) === '15:00')!;
+    expect(slot.items[0]).toMatchObject({ occupiedFrom: DAY_START, occupiedTo: DAY_END, endsAt: DAY_END });
+  });
+
+  it('con una reserva de día completo, el mismo juego ya no está libre ese día (a ninguna hora)', () => {
+    const busy = [{ resourceId: 'castillo-1', startsAt: DAY_START, endsAt: DAY_END }];
+    const slots = findSlots(rental({ busy }));
+    expect(slots.length).toBeGreaterThan(0);
+    expect(slots.every((s) => s.items[0]!.resourceIds[0] === 'castillo-2')).toBe(true);
+
+    const both = [...busy, { resourceId: 'castillo-2', startsAt: '2026-11-18T22:00:00Z', endsAt: '2026-11-18T23:00:00Z' }];
+    expect(findSlots(rental({ busy: both }))).toEqual([]);
+  });
+
+  it('el juego reservado para el día anterior no impide el día siguiente', () => {
+    const ayer = [{ resourceId: 'castillo-1', startsAt: '2026-11-17T03:00:00Z', endsAt: DAY_START }];
+    expect(findSlots(rental({ busy: ayer, resources: [castillo1] }))).not.toEqual([]);
+  });
+
+  it('el toro se arrienda por bloques de 3 horas con operador y se puede arrendar dos veces el mismo día', () => {
+    const base = rental({ services: [arriendoToro] });
+    expect(times(base)[0]).toBe('09:00'); // la holgura de traslado puede quedar fuera del horario de atención
+    expect(times(base).at(-1)).toBe('18:00'); // termina a las 21:00
+    // Toro ocupado de 10:00 a 13:00 (+ holguras 09:00–14:00): vuelve a estar libre para las 15:00
+    const busy = [{ resourceId: 'toro', startsAt: '2026-11-18T12:00:00Z', endsAt: '2026-11-18T17:00:00Z' }];
+    expect(times(rental({ services: [arriendoToro], busy }))).toEqual(['15:00', '16:00', '17:00', '18:00']);
+  });
+
+  it('castillo y toro en el mismo evento empiezan a la misma hora (no se encadenan)', () => {
+    const slot = findSlots(rental({ services: [arriendoCastillo, arriendoToro] })).find((s) => local(s.startsAt) === '15:00')!;
+    expect(slot.items.map((i) => local(i.startsAt))).toEqual(['15:00', '15:00']);
+    expect(slot.items[1]!.resourceIds.sort()).toEqual(['op', 'toro']);
+    expect(slot.endsAt).toBe(DAY_END);
+  });
+
+  it('fuera del modo arriendo, día completo no aplica y los servicios se encadenan como siempre', () => {
+    const corto = { ...arriendoCastillo, durationMinutes: 60 };
+    const slots = findSlots(rental({ parallel: false, services: [corto] }));
+    expect(slots[0]!.items[0]!.occupiedFrom).not.toBe(DAY_START);
+  });
+
+  it('los feriados y los días sin horario cierran también el arriendo de día completo', () => {
+    expect(findSlots(rental({ holidays: [DATE] }))).toEqual([]);
+    expect(findSlots(rental({ branchHours: [{ weekday: 4, start: '09:00', end: '21:00' }] }))).toEqual([]);
+  });
+
+  it('día completo en el cambio de horario de verano (6 de septiembre de 2026, día de 23 horas)', () => {
+    const sept = rental({
+      date: '2026-09-06',
+      now: '2026-09-01T12:00:00Z',
+      branchHours: [{ weekday: 0, start: '09:00', end: '21:00' }],
+    });
+    const slot = findSlots(sept)[0]!;
+    const from = Date.parse(slot.items[0]!.occupiedFrom);
+    const to = Date.parse(slot.items[0]!.occupiedTo);
+    expect((to - from) / 3_600_000).toBe(23);
+  });
+});
+
 describe('reglas de reservas', () => {
   it('transiciones de estado', () => {
     expect(canTransition('confirmed', 'checked_in')).toBe(true);

@@ -19,6 +19,7 @@ import {
   canManageBranch,
   checkLimit,
   memberSchema,
+  parseServiceDetails,
   resourceSchema,
   serviceSchema,
   updateBusinessSchema,
@@ -202,9 +203,15 @@ export async function deleteResourceAction(_: ActionState, form: FormData): Prom
 export async function saveServiceAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const { db, business } = await contextFor(form, 'catalog.manage');
-    const input = serviceSchema(business.currency).parse({ ...formToObject(form), requirements: jsonField(form, 'requirements') });
-    if (input.serviceId) await repo.updateService(db, input.serviceId, input);
-    else await repo.createService(db, input, business.booking_mode);
+    const raw = formToObject(form);
+    const parsed = serviceSchema(business.currency).parse({ ...raw, requirements: jsonField(form, 'requirements') });
+    // Día completo solo existe en el modo arriendo (fase 3A)
+    const input = { ...parsed, fullDay: business.booking_mode === 'rental' && parsed.fullDay };
+    // Ficha: los campos los define la plantilla del rubro
+    const details = parseServiceDetails(await repo.getServiceFields(db, business.industry_code), raw);
+    if (!details.ok) return fail(details.message);
+    if (input.serviceId) await repo.updateService(db, input.serviceId, input, details.details);
+    else await repo.createService(db, input, business.booking_mode, details.details);
     revalidate(business.id, '/servicios');
     return ok(input.serviceId ? t.saved : 'Servicio creado');
   } catch (error) {
@@ -304,6 +311,7 @@ export async function updateBookingSettingsAction(_: ActionState, form: FormData
       max_advance_days: input.maxAdvanceDays,
       cancellation_hours: input.cancellationHours,
       public_booking_enabled: input.publicBookingEnabled,
+      show_public_prices: input.showPublicPrices,
     });
     revalidatePath(`/panel/${business.id}`, 'layout');
     return ok(t.saved);

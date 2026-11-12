@@ -1,9 +1,13 @@
-import type { ServiceInput } from '@agenda/core';
+import { parseServiceFields, type ServiceDetails, type ServiceField, type ServiceInput } from '@agenda/core';
 import type { DbClient } from '../client';
 import type { Tables } from '../database.types';
 import { assertOk, expectRows, unwrap } from '../errors';
 
-export type Service = Tables<'services'> & { service_resource_requirements: Tables<'service_resource_requirements'>[] };
+export type Service = Tables<'services'> & {
+  service_resource_requirements: Tables<'service_resource_requirements'>[];
+  service_photos: Tables<'service_photos'>[];
+};
+export type ServicePhoto = Tables<'service_photos'>;
 export type Addon = Tables<'addons'> & { addon_stock: Tables<'addon_stock'>[] };
 export type IndustryTemplate = Pick<Tables<'industry_templates'>, 'code' | 'name' | 'booking_mode'>;
 
@@ -12,6 +16,13 @@ export type IndustryTemplate = Pick<Tables<'industry_templates'>, 'code' | 'name
 // ---------------------------------------------------------------------------
 export async function listIndustryTemplates(db: DbClient): Promise<IndustryTemplate[]> {
   return unwrap(await db.from('industry_templates').select('code, name, booking_mode').order('sort_order'));
+}
+
+/** Campos de la ficha de servicio que define la plantilla del rubro (fase 3A). */
+export async function getServiceFields(db: DbClient, industryCode: string): Promise<ServiceField[]> {
+  const row = unwrap(await db.from('industry_templates').select('config').eq('code', industryCode).maybeSingle());
+  const config = row?.config as { service_fields?: unknown } | null | undefined;
+  return parseServiceFields(config?.service_fields);
 }
 
 export async function listHolidays(db: DbClient, fromDate: string, toDate: string) {
@@ -23,12 +34,19 @@ export async function listHolidays(db: DbClient, fromDate: string, toDate: strin
 // ---------------------------------------------------------------------------
 export async function listServices(db: DbClient, businessId: string): Promise<Service[]> {
   return unwrap(
-    await db.from('services').select('*, service_resource_requirements(*)').eq('business_id', businessId).order('name'),
+    await db
+      .from('services')
+      .select('*, service_resource_requirements(*), service_photos(*)')
+      .eq('business_id', businessId)
+      .order('name')
+      .order('position', { referencedTable: 'service_photos' }),
   );
 }
 
-function serviceValues(input: ServiceInput) {
+function serviceValues(input: ServiceInput, details: ServiceDetails) {
   return {
+    full_day: input.fullDay,
+    details,
     name: input.name,
     description: input.description,
     duration_minutes: input.durationMinutes,
@@ -52,11 +70,12 @@ export async function createService(
   db: DbClient,
   input: ServiceInput,
   bookingMode: Tables<'services'>['booking_mode'],
+  details: ServiceDetails = {},
 ): Promise<string> {
   const id = unwrap(
     await db
       .from('services')
-      .insert({ ...serviceValues(input), business_id: input.businessId, booking_mode: bookingMode })
+      .insert({ ...serviceValues(input, details), business_id: input.businessId, booking_mode: bookingMode })
       .select('id')
       .single(),
   ).id;
@@ -70,8 +89,13 @@ export async function createService(
   return id;
 }
 
-export async function updateService(db: DbClient, serviceId: string, input: ServiceInput): Promise<void> {
-  expectRows(unwrap(await db.from('services').update(serviceValues(input)).eq('id', serviceId).select('id')));
+export async function updateService(
+  db: DbClient,
+  serviceId: string,
+  input: ServiceInput,
+  details: ServiceDetails = {},
+): Promise<void> {
+  expectRows(unwrap(await db.from('services').update(serviceValues(input, details)).eq('id', serviceId).select('id')));
   const previous = unwrap(await db.from('service_resource_requirements').select('id').eq('service_id', serviceId));
   if (input.requirements.length > 0) {
     assertOk(await db.from('service_resource_requirements').insert(requirementRows(serviceId, input)));
@@ -83,6 +107,22 @@ export async function updateService(db: DbClient, serviceId: string, input: Serv
 
 export async function deleteService(db: DbClient, serviceId: string): Promise<void> {
   expectRows(unwrap(await db.from('services').delete().eq('id', serviceId).select('id')));
+}
+
+// ---------------------------------------------------------------------------
+// Fotos del catálogo (fase 3A). El archivo vive en Storage; aquí solo su ruta.
+// ---------------------------------------------------------------------------
+export async function addServicePhoto(
+  db: DbClient,
+  values: { business_id: string; service_id: string; path: string; position: number },
+): Promise<void> {
+  assertOk(await db.from('service_photos').insert(values));
+}
+
+/** Borra la foto y devuelve su ruta para quitar también el archivo. */
+export async function deleteServicePhoto(db: DbClient, photoId: string): Promise<string> {
+  const rows = expectRows(unwrap(await db.from('service_photos').delete().eq('id', photoId).select('path')));
+  return rows[0]!.path;
 }
 
 // ---------------------------------------------------------------------------

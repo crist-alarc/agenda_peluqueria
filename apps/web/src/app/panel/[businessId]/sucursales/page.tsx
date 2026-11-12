@@ -3,6 +3,7 @@ import { countByBusiness, getEntitlements, listBlocks, listBranches, listHoliday
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Field, Input, PageHeader } from '@agenda/ui';
 import { ActionForm, SubmitButton } from '@/components/action-form';
 import { HoursEditor } from '@/components/hours-editor';
+import { DeliverySection } from './delivery';
 import { requireBusiness } from '@/lib/session';
 import { t, weekdayName } from '@/lib/texts';
 import { createBlockAction, deleteBlockAction, deleteBranchAction, saveBranchAction } from '../actions';
@@ -121,6 +122,10 @@ export default async function BranchesPage({ params }: { params: Promise<{ busin
                   )}
                 </div>
 
+                {business.booking_mode === 'rental' && (
+                  <DeliverySection businessId={business.id} branch={branch} currency={business.currency} editable={editable} />
+                )}
+
                 {canCreate && branches.length > 1 && (
                   <ActionForm
                     action={deleteBranchAction}
@@ -174,7 +179,7 @@ export default async function BranchesPage({ params }: { params: Promise<{ busin
         <Card>
           <CardHeader>
             <CardTitle>Feriados nacionales</CardTitle>
-            <CardDescription>Precargados para Chile. En la fase de reservas se consideran como días cerrados.</CardDescription>
+            <CardDescription>Precargados para Chile. Se consideran como días cerrados.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="grid gap-1 text-sm sm:grid-cols-2">

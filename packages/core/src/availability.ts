@@ -14,6 +14,12 @@
  * - Varios servicios se encadenan: cada uno empieza cuando termina el anterior.
  * - Los feriados cierran la sucursal.
  * - Las horas se generan en la zona horaria del negocio y se devuelven en UTC.
+ *
+ * Modo arriendo (`parallel`, fase 3, ADR 0007):
+ * - Los servicios no se encadenan: todos son parte del mismo evento y empiezan
+ *   a la hora elegida (ej. castillo + toro mecánico en el mismo cumpleaños).
+ * - Un servicio de día completo (`fullDay`) ocupa su recurso todo el día local
+ *   del evento, aunque se entregue en la tarde. Sus holguras no aplican.
  */
 import { timeToMinutes, zonedLocalToUtc } from './time';
 
@@ -39,6 +45,8 @@ export type ServiceSpec = {
   bufferBeforeMinutes: number;
   bufferAfterMinutes: number;
   requirements: readonly Requirement[];
+  /** Arriendo por día completo (solo en modo `parallel`). */
+  fullDay?: boolean;
 };
 
 /** Ocupación existente: de un recurso de este negocio o de un profesional en cualquier negocio. */
@@ -73,6 +81,8 @@ export type AvailabilityInput = {
   /** Persona elegida por el cliente (id de recurso). null = cualquiera. */
   preferredPersonId?: string | null;
   addons?: readonly AddonRequest[];
+  /** Modo arriendo: los servicios ocurren a la vez, en el mismo evento. */
+  parallel?: boolean;
 };
 
 export type SlotItem = {
@@ -127,8 +137,20 @@ const contains = (outer: readonly Interval[], inner: Interval) =>
 const toInterval = (b: TimeBlock): Interval => ({ start: Date.parse(b.startsAt), end: Date.parse(b.endsAt) });
 const iso = (ms: number) => new Date(ms).toISOString();
 
+/** Inicio y fin del día local (cubre los días de 23 y 25 horas del cambio de horario). */
+export function localDay(date: string, timeZone: string): Interval {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const next = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+  return {
+    start: Date.parse(zonedLocalToUtc(`${date}T00:00`, timeZone)),
+    end: Date.parse(zonedLocalToUtc(`${next}T00:00`, timeZone)),
+  };
+}
+
 type Prepared = {
   open: Interval[];
+  /** Día local completo de la fecha pedida (para servicios de día completo). */
+  day: Interval;
   resources: Array<AvailabilityResource & { available: Interval[]; blocked: Interval[] }>;
   earliest: number;
   latest: number;
@@ -136,7 +158,8 @@ type Prepared = {
 
 function prepare(input: AvailabilityInput): Prepared {
   const now = Date.parse(input.now);
-  const empty: Prepared = { open: [], resources: [], earliest: 0, latest: 0 };
+  const day = localDay(input.date, input.timeZone);
+  const empty: Prepared = { open: [], day, resources: [], earliest: 0, latest: 0 };
   if (input.holidays.includes(input.date)) return empty;
 
   const open = toIntervals(input.branchHours, input.date, input.timeZone);
@@ -161,6 +184,7 @@ function prepare(input: AvailabilityInput): Prepared {
 
   return {
     open,
+    day,
     resources,
     earliest: now + input.minAdvanceMinutes * MINUTE,
     latest: now + input.maxAdvanceDays * DAY,
@@ -176,14 +200,22 @@ function buildSlot(input: AvailabilityInput, prepared: Prepared, start: number):
   const chosen: Chosen[] = [];
   const items: SlotItem[] = [];
   let cursor = start;
+  let end = start;
 
   for (const service of input.services) {
-    const serviceTime: Interval = { start: cursor, end: cursor + service.durationMinutes * MINUTE };
-    const occupied: Interval = {
-      start: serviceTime.start - service.bufferBeforeMinutes * MINUTE,
-      end: serviceTime.end + service.bufferAfterMinutes * MINUTE,
-    };
-    if (!contains(prepared.open, serviceTime)) return null;
+    const fullDay = Boolean(input.parallel && service.fullDay);
+    const begin = input.parallel ? start : cursor;
+    // Día completo: se entrega a la hora del evento, pero el recurso queda ocupado todo el día
+    const serviceTime: Interval = fullDay
+      ? { start: begin, end: prepared.day.end }
+      : { start: begin, end: begin + service.durationMinutes * MINUTE };
+    const occupied: Interval = fullDay
+      ? prepared.day
+      : {
+          start: serviceTime.start - service.bufferBeforeMinutes * MINUTE,
+          end: serviceTime.end + service.bufferAfterMinutes * MINUTE,
+        };
+    if (!fullDay && !contains(prepared.open, serviceTime)) return null;
 
     // Primero los requisitos más exigentes (con habilidad), para no gastar
     // a la persona especializada en un requisito genérico.
@@ -200,7 +232,7 @@ function buildSlot(input: AvailabilityInput, prepared: Prepared, start: number):
             (!req.requiredSkill || r.skills.includes(req.requiredSkill)) &&
             (req.resourceType !== 'person' || !input.preferredPersonId || r.id === input.preferredPersonId) &&
             !resourceIds.includes(r.id) &&
-            contains(r.available, serviceTime) &&
+            (fullDay ? r.available.length > 0 : contains(r.available, serviceTime)) &&
             !r.blocked.some((b) => overlaps(b, occupied)) &&
             !chosen.some(
               (c) =>
@@ -223,16 +255,17 @@ function buildSlot(input: AvailabilityInput, prepared: Prepared, start: number):
       resourceIds,
     });
     cursor = serviceTime.end;
+    end = Math.max(end, serviceTime.end);
   }
 
   // Stock de adicionales durante toda la reserva
-  const whole: Interval = { start, end: cursor };
+  const whole: Interval = { start, end };
   for (const addon of input.addons ?? []) {
     const used = addon.usage.filter((u) => overlaps(toInterval(u), whole)).reduce((sum, u) => sum + u.quantity, 0);
     if (used + addon.quantity > addon.stock) return null;
   }
 
-  return { startsAt: iso(start), endsAt: iso(cursor), items };
+  return { startsAt: iso(start), endsAt: iso(end), items };
 }
 
 /** Todos los horarios disponibles del día, con los recursos asignados. */

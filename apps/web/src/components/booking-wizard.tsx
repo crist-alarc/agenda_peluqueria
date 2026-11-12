@@ -10,9 +10,22 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
  * el servidor (directrices, principio 3).
  */
 
-export type WizardService = { id: string; name: string; durationMinutes: number; priceLabel: string; needsPerson: boolean };
+export type WizardService = {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  /** null cuando el negocio no muestra precios en el link público. */
+  priceLabel: string | null;
+  needsPerson: boolean;
+  /** Ej. "Día completo" (arriendo). Por defecto: "30 min". */
+  durationLabel?: string;
+  /** Catálogo (fase 3A): foto principal, resumen de la ficha y enlace a la ficha completa. */
+  photoUrl?: string | null;
+  summary?: string;
+  detailsHref?: string;
+};
 export type WizardPerson = { id: string; name: string; branchId: string };
-export type WizardAddon = { id: string; name: string; priceLabel: string };
+export type WizardAddon = { id: string; name: string; priceLabel: string | null };
 export type WizardDate = { value: string; weekday: string; day: string; month: string };
 export type WizardCustomer = { id: string; full_name: string; phone: string | null; email: string | null };
 export type SlotOption = { startsAt: string; label: string };
@@ -50,6 +63,7 @@ export function BookingWizard({
   book,
   searchCustomers,
   emailRequired = false,
+  rental = false,
 }: {
   mode: 'public' | 'reception';
   businessId: string;
@@ -64,6 +78,8 @@ export function BookingWizard({
   searchCustomers?: (query: string) => Promise<Result<WizardCustomer[]>>;
   /** El negocio confirma por email: el email es obligatorio. */
   emailRequired?: boolean;
+  /** Modo arriendo: los servicios son parte del mismo evento y no se elige persona. */
+  rental?: boolean;
 }) {
   const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
   const [serviceIds, setServiceIds] = useState<string[]>([]);
@@ -84,7 +100,7 @@ export function BookingWizard({
   const [form, setForm] = useState({ fullName: '', phone: '', email: '', notes: '' });
 
   const branchPeople = people.filter((p) => p.branchId === branchId);
-  const needsPerson = services.some((s) => serviceIds.includes(s.id) && s.needsPerson);
+  const needsPerson = !rental && services.some((s) => serviceIds.includes(s.id) && s.needsPerson);
   const addonList = useMemo(
     () => Object.entries(addonQty).filter(([, q]) => q > 0).map(([addonId, quantity]) => ({ addonId, quantity })),
     [addonQty],
@@ -202,34 +218,45 @@ export function BookingWizard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">1. Servicios</CardTitle>
+          <CardTitle className="text-base">{rental ? '1. ¿Qué quieres arrendar?' : '1. Servicios'}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2">
           {services.map((s) => {
             const selected = serviceIds.includes(s.id);
             return (
-              <button
-                key={s.id}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => toggleService(s.id)}
-                className={cn(
-                  'flex items-start justify-between gap-2 rounded-md border p-3 text-left text-sm transition-colors hover:bg-accent/50',
-                  selected && 'border-ring bg-accent',
-                )}
-              >
-                <span>
-                  <span className="block font-medium">{s.name}</span>
-                  <span className="text-muted-foreground">
-                    {s.durationMinutes} min · {s.priceLabel}
+              <div key={s.id} className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => toggleService(s.id)}
+                  className={cn(
+                    'flex flex-1 items-start justify-between gap-2 rounded-md border p-3 text-left text-sm transition-colors hover:bg-accent/50',
+                    selected && 'border-ring bg-accent',
+                  )}
+                >
+                  {s.photoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- foto pública del catálogo
+                    <img src={s.photoUrl} alt="" className="size-16 shrink-0 rounded object-cover" />
+                  )}
+                  <span className="flex-1">
+                    <span className="block font-medium">{s.name}</span>
+                    <span className="text-muted-foreground">
+                      {[s.durationLabel ?? `${s.durationMinutes} min`, s.priceLabel].filter(Boolean).join(' · ')}
+                    </span>
+                    {s.summary && <span className="block text-xs text-muted-foreground">{s.summary}</span>}
                   </span>
-                </span>
-                {selected && (
-                  <span className="text-xs font-semibold text-accent-foreground">
-                    {serviceIds.indexOf(s.id) + 1}
-                  </span>
+                  {selected && (
+                    <span className="text-xs font-semibold text-accent-foreground">
+                      {rental ? <Check className="size-4" /> : serviceIds.indexOf(s.id) + 1}
+                    </span>
+                  )}
+                </button>
+                {s.detailsHref && (
+                  <a href={s.detailsHref} className="self-start text-xs underline underline-offset-2">
+                    Ver ficha de {s.name}
+                  </a>
                 )}
-              </button>
+              </div>
             );
           })}
         </CardContent>
@@ -268,7 +295,7 @@ export function BookingWizard({
               return (
                 <div key={a.id} className="flex items-center justify-between gap-2 text-sm">
                   <span>
-                    {a.name} <span className="text-muted-foreground">· {a.priceLabel}</span>
+                    {a.name} {a.priceLabel && <span className="text-muted-foreground">· {a.priceLabel}</span>}
                   </span>
                   <span className="flex items-center gap-2">
                     <Button
@@ -304,7 +331,7 @@ export function BookingWizard({
       {serviceIds.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">3. Día y hora</CardTitle>
+            <CardTitle className="text-base">{rental ? '3. Día y hora del evento' : '3. Día y hora'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Día">

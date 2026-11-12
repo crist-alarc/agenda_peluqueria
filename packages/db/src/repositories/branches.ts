@@ -3,18 +3,21 @@ import type { DbClient } from '../client';
 import type { Tables } from '../database.types';
 import { assertOk, expectRows, unwrap } from '../errors';
 
-export type Branch = Tables<'branches'> & { branch_hours: Tables<'branch_hours'>[] };
+export type DeliveryZoneRow = Tables<'delivery_zones'>;
+export type Branch = Tables<'branches'> & { branch_hours: Tables<'branch_hours'>[]; delivery_zones: DeliveryZoneRow[] };
 export type Block = Tables<'blocks'>;
 
 export async function listBranches(db: DbClient, businessId: string): Promise<Branch[]> {
   return unwrap(
     await db
       .from('branches')
-      .select('*, branch_hours(*)')
+      .select('*, branch_hours(*), delivery_zones(*)')
       .eq('business_id', businessId)
       .order('created_at')
       .order('weekday', { referencedTable: 'branch_hours' })
-      .order('opens_at', { referencedTable: 'branch_hours' }),
+      .order('opens_at', { referencedTable: 'branch_hours' })
+      .order('position', { referencedTable: 'delivery_zones' })
+      .order('name', { referencedTable: 'delivery_zones' }),
   );
 }
 
@@ -31,6 +34,42 @@ export async function updateBranch(
   values: { name: string; address: string | null; commune: string | null; active: boolean },
 ): Promise<void> {
   expectRows(unwrap(await db.from('branches').update(values).eq('id', branchId).select('id')));
+}
+
+// ---------------------------------------------------------------------------
+// Despacho y zonas (fase 3A)
+// ---------------------------------------------------------------------------
+export async function updateBranchDelivery(
+  db: DbClient,
+  branchId: string,
+  values: { delivery_mode: 'included' | 'fixed' | 'by_zone'; delivery_fee: number },
+): Promise<void> {
+  expectRows(unwrap(await db.from('branches').update(values).eq('id', branchId).select('id')));
+}
+
+export async function saveDeliveryZone(
+  db: DbClient,
+  values: { id?: string; business_id: string; branch_id: string; name: string; fee: number; active: boolean },
+): Promise<void> {
+  const { id, ...rest } = values;
+  if (id) {
+    expectRows(
+      unwrap(
+        await db
+          .from('delivery_zones')
+          .update({ name: rest.name, fee: rest.fee, active: rest.active })
+          .eq('id', id)
+          .eq('branch_id', rest.branch_id)
+          .select('id'),
+      ),
+    );
+  } else {
+    assertOk(await db.from('delivery_zones').insert(rest));
+  }
+}
+
+export async function deleteDeliveryZone(db: DbClient, zoneId: string): Promise<void> {
+  expectRows(unwrap(await db.from('delivery_zones').delete().eq('id', zoneId).select('id')));
 }
 
 export async function deleteBranch(db: DbClient, branchId: string): Promise<void> {
