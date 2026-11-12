@@ -1325,29 +1325,6 @@ export type Database = {
           },
         ]
       }
-      platform_admins: {
-        Row: {
-          created_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "platform_admins_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       plan_features: {
         Row: {
           enabled: boolean
@@ -1397,6 +1374,29 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professionals: {
         Row: {
@@ -1806,14 +1806,14 @@ export type Database = {
         Insert: {
           admin_user_id: string
           business_id: string
-          id?: number
+          id?: never
           request_id: string
           viewed_at?: string
         }
         Update: {
           admin_user_id?: string
           business_id?: string
-          id?: number
+          id?: never
           request_id?: string
           viewed_at?: string
         }
@@ -1913,22 +1913,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      app_admin_cancel_support: { Args: { p_request_id: string }; Returns: undefined }
-      app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
-      app_admin_request_support: {
-        Args: { p_business_id: string; p_hours: number; p_reason: string }
-        Returns: string
-      }
-      app_admin_support_snapshot: { Args: { p_business_id: string }; Returns: Json }
-      app_decide_support_request: {
-        Args: { p_approve: boolean; p_hours?: number; p_request_id: string }
-        Returns: undefined
-      }
-      app_revoke_support_access: { Args: { p_request_id: string }; Returns: undefined }
-      app_set_support_approver: {
-        Args: { p_membership_id: string; p_value: boolean }
-        Returns: undefined
-      }
       app_add_commission_adjustment: {
         Args: {
           p_amount: number
@@ -1946,6 +1930,19 @@ export type Database = {
           p_role: Database["public"]["Enums"]["membership_role"]
         }
         Returns: string
+      }
+      app_admin_cancel_support: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
+      app_admin_request_support: {
+        Args: { p_business_id: string; p_hours: number; p_reason: string }
+        Returns: string
+      }
+      app_admin_support_snapshot: {
+        Args: { p_business_id: string }
+        Returns: Json
       }
       app_booking_commission_data: {
         Args: { p_booking_id: string }
@@ -2006,6 +2003,10 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: undefined
       }
+      app_decide_support_request: {
+        Args: { p_approve: boolean; p_hours?: number; p_request_id: string }
+        Returns: undefined
+      }
       app_expire_pending: { Args: never; Returns: number }
       app_link_my_customers: { Args: never; Returns: number }
       app_my_bookings: { Args: never; Returns: Json }
@@ -2018,6 +2019,10 @@ export type Database = {
         Args: { p_booking_id: string; p_lines: Json }
         Returns: number
       }
+      app_revoke_support_access: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       app_set_item_shares: {
         Args: { p_booking_item_id: string; p_shares: Json }
         Returns: undefined
@@ -2028,6 +2033,10 @@ export type Database = {
       }
       app_set_settlement_status: {
         Args: { p_settlement_id: string; p_status: string }
+        Returns: undefined
+      }
+      app_set_support_approver: {
+        Args: { p_membership_id: string; p_value: boolean }
         Returns: undefined
       }
       app_use_booking_token: { Args: { p_token_hash: string }; Returns: Json }

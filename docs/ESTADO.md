@@ -17,7 +17,7 @@
 | 3 · MVP inflables | **En curso.** Proceso documentado (`docs/proceso-inflables.md`); plan aprobado (ADR 0006, sección 7.5) |
 | 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. PR #12, **en producción** desde el 2026-11-12 |
 | 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. PR #13, **en producción** desde el 2026-11-12 |
-| Consola `/admin` · A1 | Hecha (ADR 0008): clientes de la plataforma, ficha, acceso de soporte aprobado por el negocio, vista de solo lectura. **Falta producción** (migración `platform_admin` y agregar al dueño como administrador) |
+| Consola `/admin` · A1 | Hecha (ADR 0008): clientes de la plataforma, ficha, acceso de soporte aprobado por el negocio, vista de solo lectura. PR #15, **en producción** desde el 2026-11-12; el dueño es administrador |
 | Consola `/admin` · A2 y A3 | **Siguiente** (planes; facturación a los clientes, manual con el SII) |
 | 3B · Reserva de arriendo | Después de la consola (decisión del dueño del 2026-11-12) |
 
@@ -86,7 +86,7 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261117120000_platform_admin` (**local, falta producción**), `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Migraciones | `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
 | Tests (A1) | core 100 · notifications 7 · base de datos 131 · Playwright 41 (corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -154,6 +154,10 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
+- Consola A1 (2026-11-12): `platform_admin` aplicada; huella igual a la local (11 funciones, columnas y políticas).
+  El dueño quedó en `platform_admins`. Tipos regenerados. Security Advisor: las 7 funciones nuevas aparecen como
+  "usuarios con sesión pueden ejecutarlas", intencional (validan admin o aprobador por dentro); ninguna para anónimos.
+  Ojo: el PR se fusionó antes de aplicar la migración y el panel falló unos minutos; aplicar antes de fusionar.
 - 3A (2026-11-12): `phase3a_rental_catalog` aplicada. Huella igual a la local en las 6 funciones tocadas, las
   columnas de `public`, las políticas de `delivery_zones` y `service_photos` y la plantilla de inflables. Bucket
   `catalogo` creado (público, 4 MB, JPG/PNG/WebP). Tipos regenerados sin diferencias con los escritos a mano.
