@@ -84,7 +84,9 @@ test.describe.serial('Consola de la plataforma: clientes y soporte', () => {
     await expect(owners.getByText('Cuándo revisó soporte tu configuración')).toBeVisible();
     owners.once('dialog', (d) => d.accept()); // confirmación del navegador
     await owners.getByRole('button', { name: 'Revocar acceso' }).click();
-    await expect(owners.getByText('Acceso revocado: soporte ya no puede ver tu configuración.')).toBeVisible();
+    // La tarjeta del acceso vigente desaparece y la solicitud pasa al historial como revocada
+    await expect(owners.getByRole('button', { name: 'Revocar acceso' })).toHaveCount(0);
+    await expect(owners.getByText('Acceso revocado', { exact: true })).toBeVisible();
 
     const agents = await session(browser, agent);
     const businessId = businessUrl.split('/').pop();
