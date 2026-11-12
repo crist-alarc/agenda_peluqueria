@@ -27,6 +27,8 @@ export type AdminBusiness = {
   planName: string | null;
   subscriptionStatus: string | null;
   publicBookingEnabled: boolean;
+  /** Suspendido por la plataforma (ADR 0009). */
+  suspendedAt: string | null;
   bookings30d: number;
   members: number;
   /** Última solicitud de soporte del agente actual para este negocio. */

@@ -22,13 +22,13 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { fail, formToObject, ok, toActionError, type ActionState } from '@/lib/actions';
 import { generateBookingCommissions, generateMissingCommissions } from '@/lib/commissions';
-import { requireBusiness } from '@/lib/session';
+import { requireWritableBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
 
 const id = z.uuid();
 
 async function manager(form: FormData) {
-  const ctx = await requireBusiness(id.parse(form.get('businessId')));
+  const ctx = await requireWritableBusiness(id.parse(form.get('businessId')));
   if (!can(ctx.membership, 'commissions.manage')) throw new repo.DbError(t.errors.forbidden, '42501');
   if (!hasFeature(await repo.getEntitlements(ctx.db, ctx.business.id), 'commissions')) {
     throw new repo.DbError('Tu plan no incluye comisiones');

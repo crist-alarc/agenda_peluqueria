@@ -70,6 +70,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                     {b ? (
                       <>
                         {b.name}
+                        {b.suspendedAt && <span className="ml-2 text-xs font-medium text-destructive">Suspendido</span>}
                         <span className="block text-muted-foreground">{b.industry}</span>
                       </>
                     ) : (

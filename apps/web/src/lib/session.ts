@@ -1,7 +1,7 @@
 import 'server-only';
 import { getCurrentUser, type CurrentUser } from '@agenda/auth';
 import { can, type Permission } from '@agenda/core';
-import { getBusinessContext, isPlatformAdmin, type BusinessContext, type DbClient } from '@agenda/db';
+import { DbError, getBusinessContext, isPlatformAdmin, type BusinessContext, type DbClient } from '@agenda/db';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { getDb } from './db';
@@ -34,6 +34,18 @@ export const requirePlatformAdmin = cache(async (): Promise<{ db: DbClient; user
   if (!(await isPlatformAdmin(db, user.id))) notFound();
   return { db, user };
 });
+
+/**
+ * Para acciones que modifican el negocio: si la plataforma lo suspendió, el panel queda en solo
+ * lectura (ADR 0009). La base además bloquea las reservas nuevas.
+ */
+export async function requireWritableBusiness(businessId: string) {
+  const ctx = await requireBusiness(businessId);
+  if (ctx.business.suspended_at) {
+    throw new DbError('Tu negocio está suspendido: el panel está en solo lectura. Escríbenos para reactivarlo.', 'P0001');
+  }
+  return ctx;
+}
 
 /** Igual que requireBusiness, pero exige un permiso; si no lo tiene, 404. */
 export async function requirePermission(businessId: string, permission: Permission) {

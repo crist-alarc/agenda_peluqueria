@@ -1,7 +1,8 @@
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, Select } from '@agenda/ui';
-import { listIndustryTemplates } from '@agenda/db';
+import { listIndustryTemplates, listPublicPlans } from '@agenda/db';
 import Link from 'next/link';
 import { ActionForm, SubmitButton } from '@/components/action-form';
+import { PlanPicker } from '@/components/plan-picker';
 import { requireUser } from '@/lib/session';
 import { t } from '@/lib/texts';
 import { signOutAction } from '../../(auth)/actions';
@@ -11,7 +12,7 @@ export const metadata = { title: 'Nuevo negocio' };
 
 export default async function NewBusinessPage() {
   const { db, user } = await requireUser();
-  const templates = await listIndustryTemplates(db);
+  const [templates, offer] = await Promise.all([listIndustryTemplates(db), listPublicPlans(db, 'CL')]);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-10">
@@ -48,6 +49,7 @@ export default async function NewBusinessPage() {
                 <Input name="branchCommune" placeholder="Providencia" />
               </Field>
             </fieldset>
+            {offer && offer.plans.length > 0 && <PlanPicker offer={offer} />}
             <input type="hidden" name="timezone" value="America/Santiago" />
             <SubmitButton>Crear negocio</SubmitButton>
           </ActionForm>

@@ -57,7 +57,12 @@ function BusinessRow({ business: b, now }: { business: AdminBusiness; now: strin
   return (
     <li className="grid gap-4 py-5 md:grid-cols-[1fr_22rem]">
       <div>
-        <h3 className="font-semibold">{b.name}</h3>
+        <h3 className="flex flex-wrap items-center gap-2 font-semibold">
+          {b.name}
+          <Link href={`/admin/negocios/${b.id}/plan`} className="text-sm font-normal underline underline-offset-2">
+            Plan y cobro
+          </Link>
+        </h3>
         <dl className="mt-2 grid grid-cols-[9rem_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">Rubro</dt>
           <dd>{b.industry}</dd>

@@ -10,3 +10,4 @@ export * from './repositories/bookings';
 export * from './repositories/commissions';
 export * from './storage';
 export * from './repositories/platform';
+export * from './repositories/plans';

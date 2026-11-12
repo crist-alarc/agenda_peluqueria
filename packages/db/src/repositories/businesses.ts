@@ -56,6 +56,7 @@ export async function createBusiness(db: DbClient, input: CreateBusinessInput): 
       p_branch_address: input.branchAddress ?? undefined,
       p_branch_commune: input.branchCommune ?? undefined,
       p_timezone: input.timezone,
+      p_plan_code: input.planCode,
     }),
   );
 }

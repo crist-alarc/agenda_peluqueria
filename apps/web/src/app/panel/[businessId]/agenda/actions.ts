@@ -18,7 +18,7 @@ import { availableSlots, bookSlot } from '@/lib/booking';
 import { tryGenerateBookingCommissions } from '@/lib/commissions';
 import { formatDateTime } from '@/lib/dates';
 import { sendBookingEmail } from '@/lib/notify';
-import { requireBusiness } from '@/lib/session';
+import { requireWritableBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
 import { siteUrl } from '@/lib/url';
 
@@ -32,7 +32,7 @@ function fail(error: unknown): { ok: false; message: string } {
 }
 
 async function reception(businessId: string) {
-  const ctx = await requireBusiness(businessId);
+  const ctx = await requireWritableBusiness(businessId);
   if (!can(ctx.membership, 'bookings.manage')) throw new DbError(t.errors.forbidden, '42501');
   return ctx;
 }
