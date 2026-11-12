@@ -9,24 +9,26 @@ import { signOutAction } from '../(auth)/actions';
 export const metadata = { title: 'Mis negocios' };
 
 /** Selector de contexto "Mi negocio" (directrices, sección 5.1). */
-export default async function PanelPage() {
+export default async function PanelPage({ searchParams }: { searchParams: Promise<{ todos?: string }> }) {
   const { db, user } = await requireUser();
+  const { todos } = await searchParams;
   const businesses = await listMyBusinesses(db, user.id);
   if (businesses.length === 0) redirect('/panel/nuevo');
-  if (businesses.length === 1) redirect(`/panel/${businesses[0]!.id}`);
+  // Con un solo negocio se entra directo, salvo que la persona pida ver la lista (para crear otro)
+  if (businesses.length === 1 && !todos) redirect(`/panel/${businesses[0]!.id}`);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <PageHeader
         title="Mis negocios"
-        description={user.email ?? undefined}
+        description={`${user.email ?? ''} · Una sola cuenta para todos tus negocios`}
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline">
               <Link href="/panel/nuevo">Nuevo negocio</Link>
             </Button>
             <form action={signOutAction}>
-              <Button variant="ghost">Salir</Button>
+              <Button variant="ghost">Cerrar sesión</Button>
             </form>
           </div>
         }

@@ -31,7 +31,8 @@ export async function proxy(request: NextRequest) {
   if (user && (path === '/login' || path === '/registro')) {
     const url = request.nextUrl.clone();
     url.pathname = '/panel';
-    url.search = '';
+    // Quien ya tiene sesión y quiere "crear cuenta" llega a sus negocios, donde puede crear otro
+    url.search = path === '/registro' ? '?todos=1' : '';
     return NextResponse.redirect(url);
   }
 
