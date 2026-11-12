@@ -7,8 +7,9 @@ import type { DbClient } from '../client';
 import type { Tables } from '../database.types';
 import { unwrap, unwrapMaybe } from '../errors';
 
+/** Sin fila = no es administrador (resultado válido: por eso unwrapMaybe y no unwrap). */
 export async function isPlatformAdmin(db: DbClient, userId: string): Promise<boolean> {
-  const row = unwrap(await db.from('platform_admins').select('user_id').eq('user_id', userId).maybeSingle());
+  const row = unwrapMaybe(await db.from('platform_admins').select('user_id').eq('user_id', userId).maybeSingle());
   return row != null;
 }
 
