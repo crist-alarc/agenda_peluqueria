@@ -2,7 +2,7 @@
 
 > Documento vivo para retomar el trabajo en una sesión nueva sin perder contexto.
 > **Fuente de verdad:** `docs/DIRECTRICES.md` (v1.2, final según el dueño). Decisiones: `docs/adr/`.
-> Última actualización: 2026-11-12 (**Fase 3 en curso**: 3·0 en producción, 3A programada; sigue la 3B).
+> Última actualización: 2026-11-12 (**Fase 3 en curso**: 3·0 y 3A en producción; sigue la 3B).
 
 ## 1. Dónde estamos
 
@@ -16,7 +16,7 @@
 | 2D · Comisiones | Hecha (ADR 0005): reglas, reparto entre profesionales (receta o manual por % o minutos), ajustes, liquidaciones cerradas inmutables, Excel y PDF para teléfono |
 | 3 · MVP inflables | **En curso.** Proceso documentado (`docs/proceso-inflables.md`); plan aprobado (ADR 0006, sección 7.5) |
 | 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. PR #12, **en producción** desde el 2026-11-12 |
-| 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. **Falta producción** (migración `phase3a_rental_catalog`) |
+| 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. PR #13, **en producción** desde el 2026-11-12 |
 | 3B · Reserva de arriendo | **Siguiente** |
 
 **Quedó fuera de la Fase 2, a propósito:**
@@ -77,7 +77,7 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261116120000_phase3a_rental_catalog` (**local, falta producción**), `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Migraciones | `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
 | Tests (3A) | core 96 · notifications 7 · base de datos 117 · Playwright 34 (5 nuevos, corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -144,8 +144,12 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
-- 3A: **pendiente** aplicar `20261116120000_phase3a_rental_catalog` (crea el bucket `catalogo` de Storage) y
-  regenerar tipos. Los tipos del repo se escribieron a mano para la 3A: compararlos con los generados.
+- 3A (2026-11-12): `phase3a_rental_catalog` aplicada. Huella igual a la local en las 6 funciones tocadas, las
+  columnas de `public`, las políticas de `delivery_zones` y `service_photos` y la plantilla de inflables. Bucket
+  `catalogo` creado (público, 4 MB, JPG/PNG/WebP). Tipos regenerados sin diferencias con los escritos a mano.
+  Security Advisor sin avisos nuevos.
+- **Orden de despliegue:** si la migración solo agrega cosas, aplicarla **antes** de fusionar el PR. Así la app
+  publicada no se cae.
 - 3·0 (2026-11-12): `phase3_currency` aplicada. La huella de las 14 funciones y la de las columnas de
   `public` son iguales a las locales. Tipos regenerados (sin diferencias). Security Advisor sin avisos nuevos.
 - **Recordatorios:** funcionando desde el 2026-11-11. La tarea programada responde 200
