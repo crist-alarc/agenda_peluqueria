@@ -1,15 +1,16 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, Select } from '@agenda/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, Select } from '@agenda/ui';
 import { listIndustryTemplates } from '@agenda/db';
 import Link from 'next/link';
 import { ActionForm, SubmitButton } from '@/components/action-form';
 import { requireUser } from '@/lib/session';
 import { t } from '@/lib/texts';
+import { signOutAction } from '../../(auth)/actions';
 import { createBusinessAction } from './actions';
 
 export const metadata = { title: 'Nuevo negocio' };
 
 export default async function NewBusinessPage() {
-  const { db } = await requireUser();
+  const { db, user } = await requireUser();
   const templates = await listIndustryTemplates(db);
 
   return (
@@ -50,12 +51,18 @@ export default async function NewBusinessPage() {
             <input type="hidden" name="timezone" value="America/Santiago" />
             <SubmitButton>Crear negocio</SubmitButton>
           </ActionForm>
-          <Link href="/panel" className="mt-4 block text-center text-sm text-muted-foreground hover:underline">
-            Volver
+          <Link href="/panel?todos=1" className="mt-4 block text-center text-sm text-muted-foreground hover:underline">
+            Volver a mis negocios
           </Link>
           <Link href="/mis-reservas" className="mt-2 block text-center text-sm text-muted-foreground hover:underline">
             ¿Solo quieres ver tus reservas? Mis reservas
           </Link>
+          <form action={signOutAction} className="mt-4 text-center text-xs text-muted-foreground">
+            Sesión de {user.email} ·{' '}
+            <Button variant="link" size="xs" className="h-auto p-0 text-xs">
+              Cerrar sesión
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </main>

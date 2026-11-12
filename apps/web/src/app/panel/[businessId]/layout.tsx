@@ -51,18 +51,22 @@ export default async function BusinessLayout({
             </NavLink>
           ))}
         </nav>
-        <div className="hidden border-t p-4 text-xs text-muted-foreground md:block">
+        {/* Cuenta: visible también en el teléfono (antes solo en pantallas grandes) */}
+        <div className="border-t px-4 py-3 text-xs text-muted-foreground md:p-4">
           <p className="truncate">{user.email}</p>
-          <div className="mt-2 flex gap-2">
-            <Link href="/panel" className="hover:underline">
-              Cambiar negocio
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Link href="/panel?todos=1" className="hover:underline">
+              Mis negocios
+            </Link>
+            <Link href="/panel/nuevo" className="hover:underline">
+              Nuevo negocio
             </Link>
             <Link href="/mis-reservas" className="hover:underline">
               Mis reservas
             </Link>
             <form action={signOutAction}>
               <Button variant="link" size="xs" className="h-auto p-0 text-xs text-muted-foreground">
-                Salir
+                Cerrar sesión
               </Button>
             </form>
           </div>
