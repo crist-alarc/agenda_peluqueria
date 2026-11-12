@@ -27,7 +27,7 @@ test.describe.serial('Consola: planes, cobro y suspensión', () => {
     await makePlatformAdmin(agent.email);
     await page.goto('/admin/planes/nuevo');
     const form = page.getByRole('form', { name: 'Plan' });
-    await form.getByLabel('Código').fill(planCode);
+    await form.getByRole('textbox', { name: /^Código/ }).fill(planCode);
     await form.getByLabel('Nombre').fill(planName);
     await form.getByLabel('CLP').fill('10000');
     await form.getByRole('checkbox', { name: 'Incluida' }).nth(0).check(); // Sucursales
