@@ -79,8 +79,9 @@ export async function addFeatureOverride(
       p_business_id: input.businessId,
       p_feature: input.feature,
       p_enabled: input.enabled,
-      p_limit: input.limit,
-      p_expires_at: input.expiresAt,
+      // La función acepta null (sin límite / sin término); el generador de tipos no lo refleja
+      p_limit: input.limit as number,
+      p_expires_at: input.expiresAt as string,
       p_note: input.note,
     }),
   );
