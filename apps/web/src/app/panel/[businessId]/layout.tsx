@@ -1,4 +1,5 @@
 import { can, type Permission } from '@agenda/core';
+import { isPlatformAdmin, listSupportRequests } from '@agenda/db';
 import { Badge, Button } from '@agenda/ui';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -29,8 +30,13 @@ export default async function BusinessLayout({
   params: Promise<{ businessId: string }>;
 }) {
   const { businessId } = await params;
-  const { business, membership, user } = await requireBusiness(businessId);
+  const { db, business, membership, user, canApproveSupport } = await requireBusiness(businessId);
   const base = `/panel/${business.id}`;
+  const [requests, platformAdmin] = await Promise.all([
+    canApproveSupport ? listSupportRequests(db, business.id, 1) : Promise.resolve([]),
+    isPlatformAdmin(db, user.id),
+  ]);
+  const pendingSupport = requests.find((r) => r.status === 'pending');
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
@@ -50,6 +56,7 @@ export default async function BusinessLayout({
               {item.label}
             </NavLink>
           ))}
+          {canApproveSupport && <NavLink href={`${base}/soporte`}>Soporte</NavLink>}
         </nav>
         {/* Cuenta: visible también en el teléfono (antes solo en pantallas grandes) */}
         <div className="border-t px-4 py-3 text-xs text-muted-foreground md:p-4">
@@ -64,6 +71,11 @@ export default async function BusinessLayout({
             <Link href="/mis-reservas" className="hover:underline">
               Mis reservas
             </Link>
+            {platformAdmin && (
+              <Link href="/admin" className="hover:underline">
+                Plataforma
+              </Link>
+            )}
             <form action={signOutAction}>
               <Button variant="link" size="xs" className="h-auto p-0 text-xs text-muted-foreground">
                 Cerrar sesión
@@ -72,7 +84,18 @@ export default async function BusinessLayout({
           </div>
         </div>
       </aside>
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
+        {pendingSupport && (
+          <div role="status" className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-access-pending/50 px-4 py-3 text-sm">
+            <span className="size-2 rounded-full bg-access-pending" aria-hidden />
+            Soporte pide acceso para revisar tu configuración.
+            <Link href={`${base}/soporte`} className="font-medium underline underline-offset-2">
+              Revisar solicitud
+            </Link>
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

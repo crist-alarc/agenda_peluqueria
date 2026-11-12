@@ -20,6 +20,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* Consola de la plataforma (/admin, ADR 0008) */
+  --color-platform: var(--platform);
+  --color-platform-foreground: var(--platform-foreground);
+  --color-platform-soft: var(--platform-soft);
+  --color-access-active: var(--access-active);
+  --color-access-pending: var(--access-pending);
+  --color-access-none: var(--access-none);
 }
 
 :root {
@@ -41,6 +48,13 @@
   --border: oklch(0.9 0.008 75);
   --input: oklch(0.88 0.01 75);
   --ring: oklch(0.65 0.12 65);
+  /* Pino: distingue la consola de la plataforma del panel de un negocio */
+  --platform: #1f3b36;
+  --platform-foreground: #e6efec;
+  --platform-soft: #e6efec;
+  --access-active: #2f7d5b;
+  --access-pending: #a86a12;
+  --access-none: #6b6660;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -63,6 +77,12 @@
     --border: oklch(0.3 0.008 60);
     --input: oklch(0.34 0.008 60);
     --ring: oklch(0.75 0.12 70);
+    --platform: #18302c;
+    --platform-foreground: #dcebe6;
+    --platform-soft: #1f3b36;
+    --access-active: #5fbf92;
+    --access-pending: #e0a548;
+    --access-none: #a59f98;
   }
 }
 

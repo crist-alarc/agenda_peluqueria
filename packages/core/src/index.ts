@@ -9,3 +9,4 @@ export * from './booking-context';
 export * from './reminders';
 export * from './commissions';
 export * from './rental';
+export * from './support';

@@ -17,7 +17,9 @@
 | 3 · MVP inflables | **En curso.** Proceso documentado (`docs/proceso-inflables.md`); plan aprobado (ADR 0006, sección 7.5) |
 | 3·0 · País y moneda | Hecha (ADR 0006): `businesses.country` y `currency`, montos sin sufijo `_clp`, `formatMoney`/`parseMoney`. PR #12, **en producción** desde el 2026-11-12 |
 | 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. PR #13, **en producción** desde el 2026-11-12 |
-| 3B · Reserva de arriendo | **Siguiente** |
+| Consola `/admin` · A1 | Hecha (ADR 0008): clientes de la plataforma, ficha, acceso de soporte aprobado por el negocio, vista de solo lectura. **Falta producción** (migración `platform_admin` y agregar al dueño como administrador) |
+| Consola `/admin` · A2 y A3 | **Siguiente** (planes; facturación a los clientes, manual con el SII) |
+| 3B · Reserva de arriendo | Después de la consola (decisión del dueño del 2026-11-12) |
 
 **Quedó fuera de la Fase 2, a propósito:**
 
@@ -52,6 +54,11 @@
 13. (2026-11-11) Fase 3: zonas libres (no comunas), aviso (no bloqueo) por tope de camiones, precios
     visibles u ocultos en el link público, acuerdos con cualquier negocio y cargo por servicio genérico.
     Detalle en el ADR 0006, sección 2.
+14. (2026-11-12) **Consola de la plataforma `/admin`** antes de la 3B (ADR 0008). Los clientes son los dueños de
+    negocios. Soporte ve la configuración solo con la aprobación del negocio (dueño o designados), por un tiempo que
+    elige quien aprueba; nunca ve reservas ni datos de clientes finales. Facturación a los clientes: manual
+    (portal del SII) por ahora. Precios de los planes: pendientes.
+15. (2026-11-12) El diseño de pantallas se trabaja con el skill `anthropic-skills:frontend-design`.
 
 ## 3. Tareas pendientes del dueño (fuera del código)
 
@@ -67,6 +74,8 @@
 - [ ] Cuenta en Resend: en Vercel, agregar `RESEND_API_KEY` y `EMAIL_FROM`. **Sin dominio propio, Resend solo
       entrega al email del dueño de la cuenta.** Mientras tanto, usar el modo de confirmación `auto`.
 - [ ] Comprar el dominio y configurar SPF, DKIM y DMARC (necesario antes del piloto con clientes reales).
+- [ ] **Requisito pendiente (ADR 0008):** verificación en dos pasos obligatoria para entrar a `/admin`. Por ahora
+      se entra con la cuenta normal; hacerla antes de sumar otros agentes o antes del piloto.
 - [x] **Antes de la Fase 3:** documentar con los hermanos su proceso actual paso a paso (sección 7.1). Hecho: `docs/proceso-inflables.md`.
 
 ## 4. Datos del proyecto
@@ -77,8 +86,8 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
-| Tests (3A) | core 96 · notifications 7 · base de datos 117 · Playwright 34 (5 nuevos, corren en el CI) |
+| Migraciones | `20261117120000_platform_admin` (**local, falta producción**), `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Tests (A1) | core 100 · notifications 7 · base de datos 131 · Playwright 41 (corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
 ### Mapa del código (dónde está cada cosa)
@@ -94,6 +103,7 @@
 | Emails | — | — | `packages/notifications` (`email.ts`, `templates.ts`, `ics.ts`) |
 | Dinero (moneda del negocio) | `money.ts` (`formatMoney`, `parseMoney`) | — | Configuración |
 | Arriendo (fase 3) | `rental.ts` (despacho, camiones, ficha), `availability.ts` (`parallel`, `fullDay`) | `repositories/catalog.ts`, `branches.ts`, `storage.ts` | `r/[slug]`, `r/[slug]/s/[serviceId]`, `panel/[businessId]/rental-actions.ts`, `sucursales/delivery.tsx`, `lib/catalog.ts` |
+| Consola de la plataforma | `support.ts` | `repositories/platform.ts` | `admin/*`, `panel/[businessId]/soporte`, `support-actions.ts`, `components/support-access.tsx` |
 | Validación de formularios | `schemas.ts` (Zod; los esquemas con montos reciben la moneda) | — | Server Actions en cada carpeta |
 
 ## 5. Cómo trabaja Claude en este repo (notas técnicas)

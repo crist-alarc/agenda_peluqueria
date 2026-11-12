@@ -1197,6 +1197,7 @@ export type Database = {
       memberships: {
         Row: {
           business_id: string
+          can_approve_support: boolean
           created_at: string
           id: string
           role: Database["public"]["Enums"]["membership_role"]
@@ -1204,6 +1205,7 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          can_approve_support?: boolean
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["membership_role"]
@@ -1211,6 +1213,7 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          can_approve_support?: boolean
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["membership_role"]
@@ -1316,6 +1319,29 @@ export type Database = {
           {
             foreignKeyName: "organizations_owner_user_id_fkey"
             columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_admins_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1769,11 +1795,140 @@ export type Database = {
           },
         ]
       }
+      support_access_log: {
+        Row: {
+          admin_user_id: string
+          business_id: string
+          id: number
+          request_id: string
+          viewed_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          business_id: string
+          id?: number
+          request_id: string
+          viewed_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          business_id?: string
+          id?: number
+          request_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_access_log_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_access_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_access_log_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "support_access_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_access_requests: {
+        Row: {
+          business_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          expires_at: string | null
+          id: string
+          reason: string
+          requested_by: string
+          requested_hours: number
+          requester_email: string
+          requester_name: string
+          status: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          expires_at?: string | null
+          id?: string
+          reason: string
+          requested_by: string
+          requested_hours: number
+          requester_email: string
+          requester_name: string
+          status?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          expires_at?: string | null
+          id?: string
+          reason?: string
+          requested_by?: string
+          requested_hours?: number
+          requester_email?: string
+          requester_name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_access_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_access_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_access_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      app_admin_cancel_support: { Args: { p_request_id: string }; Returns: undefined }
+      app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
+      app_admin_request_support: {
+        Args: { p_business_id: string; p_hours: number; p_reason: string }
+        Returns: string
+      }
+      app_admin_support_snapshot: { Args: { p_business_id: string }; Returns: Json }
+      app_decide_support_request: {
+        Args: { p_approve: boolean; p_hours?: number; p_request_id: string }
+        Returns: undefined
+      }
+      app_revoke_support_access: { Args: { p_request_id: string }; Returns: undefined }
+      app_set_support_approver: {
+        Args: { p_membership_id: string; p_value: boolean }
+        Returns: undefined
+      }
       app_add_commission_adjustment: {
         Args: {
           p_amount: number

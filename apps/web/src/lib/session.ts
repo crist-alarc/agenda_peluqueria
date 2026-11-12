@@ -1,7 +1,7 @@
 import 'server-only';
 import { getCurrentUser, type CurrentUser } from '@agenda/auth';
 import { can, type Permission } from '@agenda/core';
-import { getBusinessContext, type BusinessContext, type DbClient } from '@agenda/db';
+import { getBusinessContext, isPlatformAdmin, type BusinessContext, type DbClient } from '@agenda/db';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { getDb } from './db';
@@ -24,6 +24,16 @@ export const requireBusiness = cache(
     return { ...ctx, db, user };
   },
 );
+
+/**
+ * Consola de la plataforma (/admin): solo administradores de la plataforma. A cualquier
+ * otra persona se le responde 404, para no revelar que la consola existe (ADR 0008).
+ */
+export const requirePlatformAdmin = cache(async (): Promise<{ db: DbClient; user: CurrentUser }> => {
+  const { db, user } = await requireUser();
+  if (!(await isPlatformAdmin(db, user.id))) notFound();
+  return { db, user };
+});
 
 /** Igual que requireBusiness, pero exige un permiso; si no lo tiene, 404. */
 export async function requirePermission(businessId: string, permission: Permission) {

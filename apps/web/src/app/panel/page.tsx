@@ -1,5 +1,5 @@
 import { Badge, Button, Card, CardContent, PageHeader } from '@agenda/ui';
-import { listMyBusinesses } from '@agenda/db';
+import { isPlatformAdmin, listMyBusinesses } from '@agenda/db';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/session';
@@ -12,7 +12,7 @@ export const metadata = { title: 'Mis negocios' };
 export default async function PanelPage({ searchParams }: { searchParams: Promise<{ todos?: string }> }) {
   const { db, user } = await requireUser();
   const { todos } = await searchParams;
-  const businesses = await listMyBusinesses(db, user.id);
+  const [businesses, platformAdmin] = await Promise.all([listMyBusinesses(db, user.id), isPlatformAdmin(db, user.id)]);
   if (businesses.length === 0) redirect('/panel/nuevo');
   // Con un solo negocio se entra directo, salvo que la persona pida ver la lista (para crear otro)
   if (businesses.length === 1 && !todos) redirect(`/panel/${businesses[0]!.id}`);
@@ -23,7 +23,12 @@ export default async function PanelPage({ searchParams }: { searchParams: Promis
         title="Mis negocios"
         description={`${user.email ?? ''} · Una sola cuenta para todos tus negocios`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {platformAdmin && (
+              <Button asChild variant="outline">
+                <Link href="/admin">Plataforma</Link>
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link href="/panel/nuevo">Nuevo negocio</Link>
             </Button>
