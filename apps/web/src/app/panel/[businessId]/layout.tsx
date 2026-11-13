@@ -110,13 +110,9 @@ export default async function BusinessLayout({
           </div>
         )}
         {billing?.status === 'grace' && <BillingGraceNotice billing={billing} base={base} />}
-        {billing?.status === 'blocked' ? (
-          <BillingGate base={base} gate={<BillingBlocked billing={billing} base={base} />}>
-            {children}
-          </BillingGate>
-        ) : (
-          children
-        )}
+        <BillingGate base={base} blocked={billing?.status === 'blocked'} gate={billing ? <BillingBlocked billing={billing} base={base} /> : null}>
+          {children}
+        </BillingGate>
       </main>
     </div>
   );
