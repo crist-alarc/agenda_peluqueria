@@ -239,7 +239,29 @@ export type Database = {
           quantity?: number | null
           to_date?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "billing_charge_lines_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_charge_lines_charge_id_fkey"
+            columns: ["charge_id"]
+            isOneToOne: false
+            referencedRelation: "billing_charges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_charge_lines_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billing_charges: {
         Row: {
@@ -332,7 +354,29 @@ export type Database = {
           void_reason?: string | null
           voided_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "billing_charges_billing_entity_id_fkey"
+            columns: ["billing_entity_id"]
+            isOneToOne: false
+            referencedRelation: "billing_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_charges_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_charges_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billing_entities: {
         Row: {
@@ -805,7 +849,22 @@ export type Database = {
           id?: string
           starts_on?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "branch_activity_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_activity_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       branch_hours: {
         Row: {
@@ -1106,6 +1165,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "plans"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_payment_term_id_fkey"
+            columns: ["payment_term_id"]
+            isOneToOne: false
+            referencedRelation: "payment_terms"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "business_subscriptions_plan_code_fkey"
@@ -2669,11 +2742,7 @@ export type Database = {
         Returns: string
       }
       app_admin_add_charge_adjustment: {
-        Args: {
-          p_charge_id: string
-          p_label: string
-          p_net: number
-        }
+        Args: { p_charge_id: string; p_label: string; p_net: number }
         Returns: undefined
       }
       app_admin_add_override: {
@@ -2706,24 +2775,9 @@ export type Database = {
         Args: { p_business_id: string; p_note?: string; p_plan_code: string }
         Returns: undefined
       }
-      app_admin_charge: {
-        Args: {
-          p_charge_id: string
-        }
-        Returns: Json
-      }
-      app_admin_charge_inputs: {
-        Args: {
-          p_month: string
-        }
-        Returns: Json
-      }
-      app_admin_charges: {
-        Args: {
-          p_month: string
-        }
-        Returns: Json
-      }
+      app_admin_charge: { Args: { p_charge_id: string }; Returns: Json }
+      app_admin_charge_inputs: { Args: { p_month: string }; Returns: Json }
+      app_admin_charges: { Args: { p_month: string }; Returns: Json }
       app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
       app_admin_decide_free_plan: {
         Args: { p_approve: boolean; p_grant_id: string }
@@ -2742,11 +2796,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_invoice_charge: {
-        Args: {
-          p_charge_id: string
-          p_folio: string
-          p_issued_on: string
-        }
+        Args: { p_charge_id: string; p_folio: string; p_issued_on: string }
         Returns: undefined
       }
       app_admin_migrate_plan_version: {
@@ -2769,9 +2819,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_remove_charge_adjustment: {
-        Args: {
-          p_line_id: string
-        }
+        Args: { p_line_id: string }
         Returns: undefined
       }
       app_admin_remove_team_member: {
@@ -2806,11 +2854,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_save_charge: {
-        Args: {
-          p_business_id: string
-          p_lines: Json
-          p_month: string
-        }
+        Args: { p_business_id: string; p_lines: Json; p_month: string }
         Returns: string
       }
       app_admin_save_payment_method: {
@@ -2865,11 +2909,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_set_business_payment: {
-        Args: {
-          p_business_id: string
-          p_method_id: string
-          p_term_id: string
-        }
+        Args: { p_business_id: string; p_method_id: string; p_term_id: string }
         Returns: undefined
       }
       app_admin_set_team_member: {
@@ -2962,12 +3002,7 @@ export type Database = {
       app_expire_pending: { Args: never; Returns: number }
       app_link_my_customers: { Args: never; Returns: number }
       app_my_bookings: { Args: never; Returns: Json }
-      app_my_charges: {
-        Args: {
-          p_business_id: string
-        }
-        Returns: Json
-      }
+      app_my_charges: { Args: { p_business_id: string }; Returns: Json }
       app_my_plan: { Args: { p_business_id: string }; Returns: Json }
       app_public_business: { Args: { p_slug: string }; Returns: Json }
       app_public_plans: { Args: { p_country?: string }; Returns: Json }

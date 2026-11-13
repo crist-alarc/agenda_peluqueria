@@ -20,7 +20,7 @@
 | Consola `/admin` · A1 | Hecha (ADR 0008): clientes de la plataforma, ficha, acceso de soporte aprobado por el negocio, vista de solo lectura. PR #15, **en producción** desde el 2026-11-12; el dueño es administrador |
 | Consola `/admin` · A2 | Hecha (ADR 0009): empresas emisoras e impuestos por país, planes con versiones (CLP y USD, netos), elegir plan al registrarse, tramos y prorrateo, funciones puntuales, suspensión. En producción desde el 2026-11-12 |
 | Consola `/admin` · A3a | Hecha (ADR 0010): roles de la plataforma (dueño, administrador, agente), aprobación de planes por el dueño, planes free con autorización, datos de facturación obligatorios con días de gracia y pausa. PR #17, en producción desde el 2026-11-13 |
-| Consola `/admin` · A3b | Hecha (ADR 0011): cobros a mes vencido (por facturar, facturado con folio, pagado, anulado), sucursales por días de uso, período de prueba, plazos y formas de pago, alertas de no pago, Excel. **Falta producción** (migración `platform_monthly_charges`) |
+| Consola `/admin` · A3b | Hecha (ADR 0011): cobros a mes vencido (por facturar, facturado con folio, pagado, anulado), sucursales por días de uso, período de prueba, plazos y formas de pago, alertas de no pago, Excel. PR #18, en producción desde el 2026-11-13 |
 | Consola `/admin` · A4 | **Siguiente**: ejecutivos comerciales y acuerdos comerciales (ADR 0010, sección 6) |
 | 3B · Reserva de arriendo | Después de la consola (decisión del dueño del 2026-11-12) |
 
@@ -117,7 +117,7 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261120120000_platform_monthly_charges` (**local, falta producción**), `20261119120000_platform_roles_billing_profiles`, `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Migraciones | `20261120120000_platform_monthly_charges`, `20261119120000_platform_roles_billing_profiles`, `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
 | Tests (A3b) | core 145 · notifications 7 · base de datos 187 · Playwright (corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -185,6 +185,12 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
+- Consola A3b (2026-11-13): `platform_monthly_charges` aplicada con el conector, antes de fusionar. Las 16
+  funciones nuevas o cambiadas tienen la misma huella que en local. Se cargaron 3 plazos ("10 días" por defecto)
+  y 4 formas de pago, y las sucursales activas quedaron en `branch_activity`. Tipos regenerados. Security
+  Advisor sin avisos nuevos: `branch_activity`, `payment_terms` y `payment_methods` sin políticas es intencional.
+  - Las funciones de la A3a pegadas en el SQL Editor quedaron con saltos de línea de Windows (`\r`). Sin ellos
+    su huella coincide con la local; no afecta su funcionamiento. Para comparar huellas, quitar `\r` antes.
 - Consola A3a (2026-11-13): `platform_roles_billing_profiles` aplicada **a mano por el dueño desde el SQL Editor**,
   porque el conector de Supabase falló con un error 502 en esa sesión. Se registró en
   `supabase_migrations.schema_migrations`. Verificado: rol `owner`, plazo 2026-11-30 en los negocios existentes,
