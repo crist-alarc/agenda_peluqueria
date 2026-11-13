@@ -102,7 +102,7 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
   test('un administrador autoriza un plan free para ese negocio', async ({ browser }) => {
     const page = await session(browser, platformAdmin);
     await page.goto(`/admin/negocios/${businessUrl.split('/').pop()}/plan`);
-    await expect(page.getByText('76.086.428-5')).toBeVisible();
+    await expect(page.getByText('76.086.428-5', { exact: true })).toBeVisible();
     const form = page.getByRole('form', { name: 'Plan free' });
     await form.getByLabel('Plan free').selectOption(freeCode);
     await form.getByLabel('Motivo').fill('Piloto de prueba');
