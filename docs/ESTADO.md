@@ -84,6 +84,9 @@
 - [ ] Comprar el dominio y configurar SPF, DKIM y DMARC (necesario antes del piloto con clientes reales).
 - [ ] **Requisito pendiente (ADR 0008):** verificación en dos pasos obligatoria para entrar a `/admin`. Por ahora
       se entra con la cuenta normal; hacerla antes de sumar otros agentes o antes del piloto.
+- [ ] **Requisito pendiente (dueño, 2026-11-13):** los ejecutivos comerciales tendrán su propia pantalla de
+      administración (su cartera de negocios, sus acuerdos y comisiones). Después de la A4; requiere la
+      verificación en dos pasos.
 - [x] **Antes de la Fase 3:** documentar con los hermanos su proceso actual paso a paso (sección 7.1). Hecho: `docs/proceso-inflables.md`.
 
 ## 4. Datos del proyecto
