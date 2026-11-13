@@ -32,6 +32,10 @@ test.describe.serial('Consola: cobros mensuales', () => {
     await form.getByLabel('Nombre').fill(planName);
     await form.getByRole('textbox', { name: /^CLP/ }).fill('10000');
     await form.getByLabel(/Sucursal adicional al mes, neto en CLP/).fill('3000');
+    // Sin la función Sucursales el negocio no podría crear su primera sucursal al registrarse
+    await form.getByRole('checkbox', { name: 'Incluida' }).nth(0).check(); // Sucursales
+    await form.getByLabel('Límite de Sucursales').fill('3');
+    await form.getByRole('checkbox', { name: 'Incluida' }).nth(1).check(); // Recursos
     await form.getByRole('button', { name: 'Crear plan' }).click();
     await expect(form.getByText(/Plan guardado/)).toBeVisible();
   });
