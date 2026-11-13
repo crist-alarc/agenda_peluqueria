@@ -52,7 +52,7 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
     await expect(item).toHaveCount(0);
     await page.goto(`/admin/planes/${planCode}`);
     await expect(page.getByText(/espera la aprobación/)).toHaveCount(0);
-    await expect(page.getByText('Vigente')).toBeVisible();
+    await expect(page.getByText('Vigente', { exact: true })).toBeVisible();
 
     await page.goto('/admin/planes/nuevo');
     const form = page.getByRole('form', { name: 'Plan' });
