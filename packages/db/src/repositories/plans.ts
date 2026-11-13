@@ -15,6 +15,10 @@ export type PlanVersion = {
   createdAt: string;
   /** Las versiones propuestas por un administrador esperan la aprobación del dueño (ADR 0010). */
   status: 'pending' | 'approved' | 'rejected';
+  /** Sucursales incluidas, precio por sucursal adicional y días de prueba (ADR 0011). */
+  includedBranches: number;
+  extraBranchPrices: Record<string, number>;
+  trialDays: number;
   createdBy: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
@@ -50,6 +54,9 @@ export type SavePlanInput = {
   offeredCountries: string[];
   features: PlanFeatureSpec[];
   prices: Record<string, number>;
+  includedBranches: number;
+  extraBranchPrices: Record<string, number>;
+  trialDays: number;
   note: string | null;
 };
 
@@ -66,6 +73,9 @@ export async function savePlan(db: DbClient, input: SavePlanInput): Promise<stri
       p_prices: input.prices,
       p_note: input.note ?? undefined,
       p_is_free: input.isFree,
+      p_included_branches: input.includedBranches,
+      p_extra_branch_prices: input.extraBranchPrices,
+      p_trial_days: input.trialDays,
     }),
   );
 }
@@ -109,7 +119,7 @@ export async function reactivateBusiness(db: DbClient, businessId: string, note?
 
 export type AdminPeriod = {
   id: string;
-  kind: 'plan' | 'suspended';
+  kind: 'plan' | 'suspended' | 'trial';
   planName: string | null;
   version: number | null;
   currency: string;
@@ -203,7 +213,16 @@ export type PublicPlans = {
   currency: string;
   taxRateBp: number;
   documentType: string;
-  plans: Array<{ code: string; name: string; description: string | null; features: PlanFeatureSpec[]; monthlyNet: number | null }>;
+  plans: Array<{
+    code: string;
+    name: string;
+    description: string | null;
+    features: PlanFeatureSpec[];
+    monthlyNet: number | null;
+    includedBranches?: number;
+    extraBranchNet?: number | null;
+    trialDays?: number;
+  }>;
 };
 
 export async function listPublicPlans(db: DbClient, country = 'CL'): Promise<PublicPlans | null> {
@@ -268,6 +287,12 @@ export type PendingPlanVersion = {
   createdBy: string | null;
   currentFeatures: PlanFeatureSpec[] | null;
   currentPrices: Record<string, number> | null;
+  includedBranches: number;
+  extraBranchPrices: Record<string, number>;
+  trialDays: number;
+  currentIncludedBranches: number | null;
+  currentExtraBranchPrices: Record<string, number> | null;
+  currentTrialDays: number | null;
 };
 
 export type PendingFreePlan = {

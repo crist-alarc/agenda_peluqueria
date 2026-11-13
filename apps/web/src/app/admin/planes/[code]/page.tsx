@@ -17,7 +17,12 @@ import { requirePlatformAdmin } from '@/lib/session';
 import { migrateVersionAction, savePlanAction } from '../../plan-actions';
 
 const date = (iso: string) => new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeZone: 'America/Santiago' }).format(new Date(iso));
-const spec = (v: PlanVersion): PlanVersionSpec => ({ features: v.features, prices: v.prices });
+const spec = (v: PlanVersion): PlanVersionSpec => ({
+  features: v.features,
+  prices: v.prices,
+  includedBranches: v.includedBranches,
+  extraBranchPrices: v.extraBranchPrices,
+});
 
 /** Crear o editar un plan; debajo, sus versiones y la decisión sobre quienes tienen una anterior. */
 export default async function PlanPage({ params }: { params: Promise<{ code: string }> }) {
@@ -129,6 +134,30 @@ function PlanForm({ plan, current, role }: { plan: AdminPlan | null; current: Pl
                 name={`price_${c}`}
                 inputMode="decimal"
                 defaultValue={current?.prices[c] === undefined ? '' : moneyInputValue(current.prices[c]!, c)}
+              />
+            </Field>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-semibold">Sucursales y prueba</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Las sucursales sobre las incluidas se cobran por cada día que estén activas. La prueba no se cobra y aplica solo al crear el negocio.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Sucursales incluidas">
+            <Input name="includedBranches" type="number" min={1} max={1000} defaultValue={current?.includedBranches ?? 1} className="w-28" />
+          </Field>
+          <Field label="Días de prueba" hint="0 = sin prueba">
+            <Input name="trialDays" type="number" min={0} max={365} defaultValue={current?.trialDays ?? 0} className="w-28" />
+          </Field>
+          {BILLING_CURRENCY_CODES.map((c) => (
+            <Field key={c} label={`Sucursal adicional al mes, neto en ${c}`} hint={`${moneyInputHint(c)} Vacío = no se cobra.`}>
+              <Input
+                name={`extraBranch_${c}`}
+                inputMode="decimal"
+                defaultValue={current?.extraBranchPrices?.[c] === undefined ? '' : moneyInputValue(current.extraBranchPrices[c]!, c)}
               />
             </Field>
           ))}

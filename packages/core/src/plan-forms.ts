@@ -24,6 +24,10 @@ export type PlanFormResult =
         offeredCountries: string[];
         features: PlanFeatureSpec[];
         prices: Record<string, number>;
+        /** Sucursales incluidas en el precio, precio por sucursal adicional y días de prueba (ADR 0011). */
+        includedBranches: number;
+        extraBranchPrices: Record<string, number>;
+        trialDays: number;
         note: string | null;
       };
     }
@@ -63,6 +67,26 @@ export function parsePlanForm(form: Record<string, unknown>): PlanFormResult {
     }
   }
 
+  const extraBranchPrices: Record<string, number> = {};
+  for (const currency of BILLING_CURRENCY_CODES) {
+    const raw = text(form[`extraBranch_${currency}`]);
+    if (raw === '') continue;
+    try {
+      extraBranchPrices[currency] = parseMoney(raw, currency);
+    } catch (error) {
+      const message = error instanceof InvalidAmountError ? error.message : 'Monto no válido';
+      return { ok: false, message: `Sucursal adicional en ${currency}: ${message}` };
+    }
+  }
+  const includedBranches = text(form.includedBranches) === '' ? 1 : Number(text(form.includedBranches));
+  if (!Number.isInteger(includedBranches) || includedBranches < 1 || includedBranches > 1000) {
+    return { ok: false, message: 'Las sucursales incluidas deben ser un número entero desde 1' };
+  }
+  const trialDays = text(form.trialDays) === '' ? 0 : Number(text(form.trialDays));
+  if (!Number.isInteger(trialDays) || trialDays < 0 || trialDays > 365) {
+    return { ok: false, message: 'Los días de prueba deben ser un número entero entre 0 y 365' };
+  }
+
   const features: PlanFeatureSpec[] = [];
   for (const feature of FEATURES) {
     const enabled = isOn(form[`feature_${feature}`]);
@@ -74,6 +98,13 @@ export function parsePlanForm(form: Record<string, unknown>): PlanFormResult {
       limit = n;
     }
     features.push({ feature, enabled, limit: enabled ? limit : null });
+  }
+
+  // Todo plan incluye al menos una sucursal: sin ella, quien lo elija no puede crear su negocio (ADR 0011)
+  const branches = features.find((f) => f.feature === 'branches');
+  if (!branches?.enabled) return { ok: false, message: 'El plan debe incluir la función Sucursales (al menos 1)' };
+  if (branches.limit !== null && branches.limit < includedBranches) {
+    return { ok: false, message: 'El límite de sucursales no puede ser menor que las sucursales incluidas en el precio' };
   }
 
   return {
@@ -88,6 +119,9 @@ export function parsePlanForm(form: Record<string, unknown>): PlanFormResult {
       offeredCountries,
       features,
       prices: isOn(form.isFree) ? {} : prices,
+      includedBranches,
+      extraBranchPrices: isOn(form.isFree) ? {} : extraBranchPrices,
+      trialDays: isOn(form.isFree) ? 0 : trialDays,
       note: text(form.note) || null,
     },
   };

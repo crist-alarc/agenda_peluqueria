@@ -80,7 +80,7 @@ describe('roles y planes free', () => {
   });
 
   it('un plan free no se publica para el registro y no lleva precios', () => {
-    const r = parsePlanForm({ code: 'amigos', name: 'Amigos', isFree: 'on', isPublic: 'on', active: 'on', price_CLP: '10.000' });
+    const r = parsePlanForm({ code: 'amigos', name: 'Amigos', isFree: 'on', isPublic: 'on', active: 'on', price_CLP: '10.000', feature_branches: 'on' });
     expect(r).toMatchObject({ ok: true, value: { isFree: true, isPublic: false, prices: {} } });
   });
 });

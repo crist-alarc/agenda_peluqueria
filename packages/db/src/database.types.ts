@@ -193,6 +193,147 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_charge_lines: {
+        Row: {
+          business_id: string
+          charge_id: string
+          created_at: string
+          created_by: string | null
+          days: number | null
+          from_date: string | null
+          id: string
+          kind: string
+          label: string
+          net: number
+          position: number
+          quantity: number | null
+          to_date: string | null
+        }
+        Insert: {
+          business_id: string
+          charge_id: string
+          created_at?: string
+          created_by?: string | null
+          days?: number | null
+          from_date?: string | null
+          id?: string
+          kind: string
+          label: string
+          net: number
+          position?: number
+          quantity?: number | null
+          to_date?: string | null
+        }
+        Update: {
+          business_id?: string
+          charge_id?: string
+          created_at?: string
+          created_by?: string | null
+          days?: number | null
+          from_date?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          net?: number
+          position?: number
+          quantity?: number | null
+          to_date?: string | null
+        }
+        Relationships: []
+      }
+      billing_charges: {
+        Row: {
+          bill_to: Json | null
+          billing_entity_id: string | null
+          business_id: string
+          created_at: string
+          created_by: string | null
+          credit_note_folio: string | null
+          currency: string
+          document_type: string | null
+          due_on: string | null
+          folio: string | null
+          gross: number
+          id: string
+          issued_on: string | null
+          month: string
+          net: number
+          notes: string | null
+          paid_method: string | null
+          paid_on: string | null
+          payment_method_name: string | null
+          payment_note: string | null
+          payment_term_days: number | null
+          payment_term_name: string | null
+          status: string
+          tax: number
+          tax_rate_bp: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          bill_to?: Json | null
+          billing_entity_id?: string | null
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          credit_note_folio?: string | null
+          currency: string
+          document_type?: string | null
+          due_on?: string | null
+          folio?: string | null
+          gross?: number
+          id?: string
+          issued_on?: string | null
+          month: string
+          net?: number
+          notes?: string | null
+          paid_method?: string | null
+          paid_on?: string | null
+          payment_method_name?: string | null
+          payment_note?: string | null
+          payment_term_days?: number | null
+          payment_term_name?: string | null
+          status?: string
+          tax?: number
+          tax_rate_bp: number
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          bill_to?: Json | null
+          billing_entity_id?: string | null
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          credit_note_folio?: string | null
+          currency?: string
+          document_type?: string | null
+          due_on?: string | null
+          folio?: string | null
+          gross?: number
+          id?: string
+          issued_on?: string | null
+          month?: string
+          net?: number
+          notes?: string | null
+          paid_method?: string | null
+          paid_on?: string | null
+          payment_method_name?: string | null
+          payment_note?: string | null
+          payment_term_days?: number | null
+          payment_term_name?: string | null
+          status?: string
+          tax?: number
+          tax_rate_bp?: number
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: []
+      }
       billing_entities: {
         Row: {
           active: boolean
@@ -642,6 +783,30 @@ export type Database = {
           },
         ]
       }
+      branch_activity: {
+        Row: {
+          branch_id: string | null
+          business_id: string
+          ends_on: string | null
+          id: string
+          starts_on: string
+        }
+        Insert: {
+          branch_id?: string | null
+          business_id: string
+          ends_on?: string | null
+          id?: string
+          starts_on: string
+        }
+        Update: {
+          branch_id?: string | null
+          business_id?: string
+          ends_on?: string | null
+          id?: string
+          starts_on?: string
+        }
+        Relationships: []
+      }
       branch_hours: {
         Row: {
           branch_id: string
@@ -767,7 +932,22 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "business_billing_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_billing_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       business_entitlements: {
         Row: {
@@ -863,6 +1043,8 @@ export type Database = {
           free_grant_id: string | null
           free_until: string | null
           next_plan_code: string | null
+          payment_method_id: string | null
+          payment_term_id: string | null
           plan_code: string
           plan_version_id: string
           started_at: string
@@ -875,6 +1057,8 @@ export type Database = {
           free_grant_id?: string | null
           free_until?: string | null
           next_plan_code?: string | null
+          payment_method_id?: string | null
+          payment_term_id?: string | null
           plan_code: string
           plan_version_id: string
           started_at?: string
@@ -887,6 +1071,8 @@ export type Database = {
           free_grant_id?: string | null
           free_until?: string | null
           next_plan_code?: string | null
+          payment_method_id?: string | null
+          payment_term_id?: string | null
           plan_code?: string
           plan_version_id?: string
           started_at?: string
@@ -906,6 +1092,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_free_grant_id_fkey"
+            columns: ["free_grant_id"]
+            isOneToOne: false
+            referencedRelation: "free_plan_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_next_plan_code_fkey"
+            columns: ["next_plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "business_subscriptions_plan_code_fkey"
@@ -1338,7 +1538,43 @@ export type Database = {
           requested_by?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "free_plan_grants_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_next_plan_code_fkey"
+            columns: ["next_plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       holidays: {
         Row: {
@@ -1540,6 +1776,57 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      payment_terms: {
+        Row: {
+          active: boolean
+          created_at: string
+          days: number
+          id: string
+          is_default: boolean
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          days: number
+          id?: string
+          is_default?: boolean
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          days?: number
+          id?: string
+          is_default?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       plan_features: {
         Row: {
           enabled: boolean
@@ -1576,12 +1863,15 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_note: string | null
+          extra_branch_prices: Json
           features: Json
           id: string
+          included_branches: number
           note: string | null
           plan_code: string
           prices: Json
           status: string
+          trial_days: number
           version: number
         }
         Insert: {
@@ -1590,12 +1880,15 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          extra_branch_prices?: Json
           features: Json
           id?: string
+          included_branches?: number
           note?: string | null
           plan_code: string
           prices?: Json
           status?: string
+          trial_days?: number
           version: number
         }
         Update: {
@@ -1604,18 +1897,28 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          extra_branch_prices?: Json
           features?: Json
           id?: string
+          included_branches?: number
           note?: string | null
           plan_code?: string
           prices?: Json
           status?: string
+          trial_days?: number
           version?: number
         }
         Relationships: [
           {
             foreignKeyName: "plan_versions_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_versions_decided_by_fkey"
+            columns: ["decided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1693,6 +1996,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "platform_admins_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "platform_admins_user_id_fkey"
             columns: ["user_id"]
@@ -2358,6 +2668,14 @@ export type Database = {
         }
         Returns: string
       }
+      app_admin_add_charge_adjustment: {
+        Args: {
+          p_charge_id: string
+          p_label: string
+          p_net: number
+        }
+        Returns: undefined
+      }
       app_admin_add_override: {
         Args: {
           p_business_id: string
@@ -2370,11 +2688,10 @@ export type Database = {
         Returns: string
       }
       app_admin_approvals: { Args: never; Returns: Json }
+      app_admin_billing_alerts: { Args: never; Returns: Json }
       app_admin_billing_setup: { Args: never; Returns: Json }
       app_admin_business_billing: {
-        Args: {
-          p_business_id: string
-        }
+        Args: { p_business_id: string }
         Returns: Json
       }
       app_admin_business_plan: {
@@ -2389,20 +2706,31 @@ export type Database = {
         Args: { p_business_id: string; p_note?: string; p_plan_code: string }
         Returns: undefined
       }
+      app_admin_charge: {
+        Args: {
+          p_charge_id: string
+        }
+        Returns: Json
+      }
+      app_admin_charge_inputs: {
+        Args: {
+          p_month: string
+        }
+        Returns: Json
+      }
+      app_admin_charges: {
+        Args: {
+          p_month: string
+        }
+        Returns: Json
+      }
       app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
       app_admin_decide_free_plan: {
-        Args: {
-          p_approve: boolean
-          p_grant_id: string
-        }
+        Args: { p_approve: boolean; p_grant_id: string }
         Returns: undefined
       }
       app_admin_decide_plan_version: {
-        Args: {
-          p_approve: boolean
-          p_note?: string
-          p_version_id: string
-        }
+        Args: { p_approve: boolean; p_note?: string; p_version_id: string }
         Returns: undefined
       }
       app_admin_end_override: {
@@ -2410,9 +2738,14 @@ export type Database = {
         Returns: undefined
       }
       app_admin_extend_billing_grace: {
+        Args: { p_business_id: string; p_until: string }
+        Returns: undefined
+      }
+      app_admin_invoice_charge: {
         Args: {
-          p_business_id: string
-          p_until: string
+          p_charge_id: string
+          p_folio: string
+          p_issued_on: string
         }
         Returns: undefined
       }
@@ -2420,15 +2753,29 @@ export type Database = {
         Args: { p_from_version_id: string; p_note?: string }
         Returns: number
       }
+      app_admin_pay_charge: {
+        Args: {
+          p_charge_id: string
+          p_method: string
+          p_note?: string
+          p_paid_on: string
+        }
+        Returns: undefined
+      }
+      app_admin_payment_options: { Args: never; Returns: Json }
       app_admin_plans: { Args: never; Returns: Json }
       app_admin_reactivate: {
         Args: { p_business_id: string; p_note?: string }
         Returns: undefined
       }
-      app_admin_remove_team_member: {
+      app_admin_remove_charge_adjustment: {
         Args: {
-          p_user_id: string
+          p_line_id: string
         }
+        Returns: undefined
+      }
+      app_admin_remove_team_member: {
+        Args: { p_user_id: string }
         Returns: undefined
       }
       app_admin_request_free_plan: {
@@ -2455,31 +2802,56 @@ export type Database = {
         Returns: undefined
       }
       app_admin_save_billing_profile: {
+        Args: { p_business_id: string; p_profile: Json }
+        Returns: undefined
+      }
+      app_admin_save_charge: {
         Args: {
           p_business_id: string
-          p_profile: Json
+          p_lines: Json
+          p_month: string
         }
-        Returns: undefined
+        Returns: string
+      }
+      app_admin_save_payment_method: {
+        Args: {
+          p_active: boolean
+          p_id: string
+          p_is_default: boolean
+          p_name: string
+        }
+        Returns: string
+      }
+      app_admin_save_payment_term: {
+        Args: {
+          p_active: boolean
+          p_days: number
+          p_id: string
+          p_is_default: boolean
+          p_name: string
+        }
+        Returns: string
       }
       app_admin_save_plan: {
         Args: {
           p_active: boolean
           p_code: string
           p_description: string
+          p_extra_branch_prices?: Json
           p_features: Json
+          p_included_branches?: number
           p_is_free?: boolean
           p_is_public: boolean
           p_name: string
           p_note?: string
           p_offered_countries: string[]
           p_prices: Json
+          p_trial_days?: number
         }
         Returns: string
       }
       app_admin_save_settings: {
-        Args: {
-          p_billing_grace_min_days: number
-        }
+        Args: { p_billing_grace_min_days: number }
         Returns: undefined
       }
       app_admin_save_tax_rule: {
@@ -2492,11 +2864,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      app_admin_set_team_member: {
+      app_admin_set_business_payment: {
         Args: {
-          p_email: string
-          p_role: string
+          p_business_id: string
+          p_method_id: string
+          p_term_id: string
         }
+        Returns: undefined
+      }
+      app_admin_set_team_member: {
+        Args: { p_email: string; p_role: string }
         Returns: undefined
       }
       app_admin_settings: { Args: never; Returns: Json }
@@ -2509,6 +2886,14 @@ export type Database = {
         Returns: undefined
       }
       app_admin_team: { Args: never; Returns: Json }
+      app_admin_void_charge: {
+        Args: {
+          p_charge_id: string
+          p_credit_note_folio?: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
       app_booking_commission_data: {
         Args: { p_booking_id: string }
         Returns: Json
@@ -2527,12 +2912,7 @@ export type Database = {
         Args: { p_business_id: string; p_to: string }
         Returns: string[]
       }
-      app_business_billing: {
-        Args: {
-          p_business_id: string
-        }
-        Returns: Json
-      }
+      app_business_billing: { Args: { p_business_id: string }; Returns: Json }
       app_claim_reminder: { Args: { p_booking_id: string }; Returns: boolean }
       app_create_booking: {
         Args: {
@@ -2582,6 +2962,12 @@ export type Database = {
       app_expire_pending: { Args: never; Returns: number }
       app_link_my_customers: { Args: never; Returns: number }
       app_my_bookings: { Args: never; Returns: Json }
+      app_my_charges: {
+        Args: {
+          p_business_id: string
+        }
+        Returns: Json
+      }
       app_my_plan: { Args: { p_business_id: string }; Returns: Json }
       app_public_business: { Args: { p_slug: string }; Returns: Json }
       app_public_plans: { Args: { p_country?: string }; Returns: Json }
@@ -2598,10 +2984,7 @@ export type Database = {
         Returns: undefined
       }
       app_save_billing_profile: {
-        Args: {
-          p_business_id: string
-          p_profile: Json
-        }
+        Args: { p_business_id: string; p_profile: Json }
         Returns: undefined
       }
       app_set_item_shares: {

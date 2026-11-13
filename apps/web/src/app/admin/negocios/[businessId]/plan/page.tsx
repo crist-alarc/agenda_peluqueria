@@ -14,11 +14,14 @@ import {
 import {
   getAdminBusinessBilling,
   getAdminBusinessPlan,
+  getBillingAlerts,
+  getPaymentOptions,
   listAdminClients,
   listAdminPlans,
   type AdminBusinessBilling,
   type AdminBusinessPlan,
   type AdminPlan,
+  type PaymentOptions,
 } from '@agenda/db';
 import { Alert, Badge, Button, Checkbox, Field, Input, PageHeader, Select } from '@agenda/ui';
 import Link from 'next/link';
@@ -27,6 +30,8 @@ import { ActionForm, SubmitButton } from '@/components/action-form';
 import { BillingProfileForm } from '@/components/billing-profile-form';
 import { requirePlatformAdmin } from '@/lib/session';
 import { adminSaveBillingProfileAction, extendGraceAction, requestFreePlanAction } from '../../../approval-actions';
+import { setBusinessPaymentAction } from '../../../charge-actions';
+import { ChargeStatusBadge } from '@/components/charge-status';
 import { addOverrideAction, changePlanAction, endOverrideAction, reactivateAction, suspendAction } from '../../../plan-actions';
 
 export const metadata = { title: 'Plan y cobro' };
@@ -44,11 +49,13 @@ export default async function BusinessPlanPage({ params }: { params: Promise<{ b
   const { businessId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(businessId)) notFound();
   const { db, role } = await requirePlatformAdmin();
-  const [p, plans, clients, billing] = await Promise.all([
+  const [p, plans, clients, billing, options, alerts] = await Promise.all([
     getAdminBusinessPlan(db, businessId),
     listAdminPlans(db),
     listAdminClients(db),
     getAdminBusinessBilling(db, businessId),
+    getPaymentOptions(db),
+    getBillingAlerts(db),
   ]);
   if (!p || !billing) notFound();
   const manager = isPlatformManager(role);
@@ -75,11 +82,13 @@ export default async function BusinessPlanPage({ params }: { params: Promise<{ b
       <div className="grid max-w-5xl gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-10">
           <BillingData billing={billing} businessId={businessId} manager={manager} />
+          <Charges billing={billing} today={alerts.today} />
           <MonthPreview p={p} />
           <Periods p={p} />
           <Features p={p} manager={manager} />
         </div>
         <aside className="space-y-8">
+          <Payment billing={billing} options={options} businessId={businessId} manager={manager} />
           <FreePlan billing={billing} plans={plans} p={p} manager={manager} />
           {manager && (
           <section aria-labelledby="cambio">
@@ -149,7 +158,7 @@ function MonthPreview({ p }: { p: AdminBusinessPlan }) {
     startsOn: x.startsOn,
     endsOn: x.endsOn,
     kind: x.kind,
-    label: x.kind === 'suspended' ? 'Suspendido' : `${x.planName} v${x.version}`,
+    label: x.kind === 'suspended' ? 'Suspendido' : x.kind === 'trial' ? `Prueba ${x.planName}` : `${x.planName} v${x.version}`,
     monthlyNet: x.monthlyNet ?? 0,
   }));
   const charge = prorateMonth(periods, month);
@@ -168,7 +177,7 @@ function MonthPreview({ p }: { p: AdminBusinessPlan }) {
       <table className="w-full text-sm">
         <tbody className="[&_td]:border-b [&_td]:py-2 [&_td]:pr-4">
           {charge.lines.map((l) => (
-            <tr key={`${l.from}-${l.label}`} className={l.kind === 'suspended' ? 'text-muted-foreground' : ''}>
+            <tr key={`${l.from}-${l.label}`} className={l.kind !== 'plan' ? 'text-muted-foreground' : ''}>
               <td>{l.label}</td>
               <td className="tabular-nums">
                 {day(l.from)} al {day(l.to)}
@@ -212,7 +221,9 @@ function Periods({ p }: { p: AdminBusinessPlan }) {
             <span className="tabular-nums text-muted-foreground">
               {day(x.startsOn)} – {x.endsOn ? day(x.endsOn) : 'hoy'}
             </span>
-            <span className="font-medium">{x.kind === 'suspended' ? 'Suspendido (sin cobro)' : `${x.planName} v${x.version}`}</span>
+            <span className="font-medium">
+              {x.kind === 'suspended' ? 'Suspendido (sin cobro)' : x.kind === 'trial' ? `Prueba de ${x.planName} (sin cobro)` : `${x.planName} v${x.version}`}
+            </span>
             {x.kind === 'plan' && (
               <span className="tabular-nums">{x.monthlyNet === null ? 'sin precio' : `${formatMoney(x.monthlyNet, x.currency)} neto al mes`}</span>
             )}
@@ -424,6 +435,82 @@ function FreePlan({ billing, plans, p, manager }: { billing: AdminBusinessBillin
           </SubmitButton>
         </ActionForm>
       )}
+    </section>
+  );
+}
+
+function Payment({ billing, options, businessId, manager }: { billing: AdminBusinessBilling; options: PaymentOptions; businessId: string; manager: boolean }) {
+  const pay = billing.payment;
+  return (
+    <section aria-labelledby="pago">
+      <h2 id="pago" className="mb-2 font-semibold">
+        Condiciones de pago
+      </h2>
+      {manager ? (
+        <ActionForm action={setBusinessPaymentAction} className="space-y-3" aria-label="Condiciones de pago">
+          <input type="hidden" name="businessId" value={businessId} />
+          <Field label="Plazo">
+            <Select name="termId" defaultValue={pay.termIsDefault ? '' : (pay.termId ?? '')}>
+              <option value="">Por defecto ({options.terms.find((t) => t.isDefault)?.name})</option>
+              {options.terms
+                .filter((t) => t.active)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          <Field label="Forma de pago">
+            <Select name="methodId" defaultValue={pay.methodIsDefault ? '' : (pay.methodId ?? '')}>
+              <option value="">Por defecto ({options.methods.find((m) => m.isDefault)?.name})</option>
+              {options.methods
+                .filter((m) => m.active)
+                .map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          <SubmitButton size="sm" variant="outline">
+            Guardar condiciones
+          </SubmitButton>
+        </ActionForm>
+      ) : (
+        <p className="text-sm">
+          {pay.termName}, {pay.methodName}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Charges({ billing, today }: { billing: AdminBusinessBilling; today: string }) {
+  if (billing.charges.length === 0) return null;
+  return (
+    <section aria-labelledby="cobros">
+      <h2 id="cobros" className="mb-3 text-lg font-semibold">
+        Cobros
+      </h2>
+      <table className="w-full text-sm">
+        <tbody className="[&_td]:border-b [&_td]:py-2 [&_td]:pr-4">
+          {billing.charges.map((c) => (
+            <tr key={c.id} className={c.status === 'void' ? 'text-muted-foreground' : ''}>
+              <td>
+                <Link href={`/admin/cobros/${c.id}`} className="capitalize hover:underline">
+                  {monthName(c.month)}
+                </Link>
+              </td>
+              <td>
+                <ChargeStatusBadge status={c.status} dueOn={c.dueOn} today={today} />
+              </td>
+              <td className="tabular-nums">{c.folio ? `Folio ${c.folio}` : ''}</td>
+              <td className="text-right tabular-nums">{formatMoney(c.gross, c.currency)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

@@ -110,6 +110,16 @@ export default async function BusinessLayout({
           </div>
         )}
         {billing?.status === 'grace' && <BillingGraceNotice billing={billing} base={base} />}
+        {billing?.overdue && (
+          <div role="status" className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-destructive/40 px-4 py-3 text-sm">
+            <span className="size-2 rounded-full bg-destructive" aria-hidden />
+            {billing.overdue.count === 1 ? 'Tienes un pago vencido' : `Tienes ${billing.overdue.count} pagos vencidos`} desde el{' '}
+            {new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${billing.overdue.oldestDueOn}T12:00:00Z`))}.
+            <Link href={`${base}/plan`} className="font-medium underline underline-offset-2">
+              Ver mis cobros
+            </Link>
+          </div>
+        )}
         <BillingGate base={base} blocked={billing?.status === 'blocked'} gate={billing ? <BillingBlocked billing={billing} base={base} /> : null}>
           {children}
         </BillingGate>
