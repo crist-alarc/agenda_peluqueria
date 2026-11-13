@@ -1,7 +1,7 @@
 import 'server-only';
 import { getCurrentUser, type CurrentUser } from '@agenda/auth';
-import { can, type Permission } from '@agenda/core';
-import { DbError, getBusinessContext, isPlatformAdmin, type BusinessContext, type DbClient } from '@agenda/db';
+import { can, isPlatformManager, type Permission, type PlatformRole } from '@agenda/core';
+import { DbError, getBusinessBilling, getBusinessContext, getPlatformRole, type BusinessContext, type DbClient } from '@agenda/db';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 import { getDb } from './db';
@@ -29,10 +29,27 @@ export const requireBusiness = cache(
  * Consola de la plataforma (/admin): solo administradores de la plataforma. A cualquier
  * otra persona se le responde 404, para no revelar que la consola existe (ADR 0008).
  */
-export const requirePlatformAdmin = cache(async (): Promise<{ db: DbClient; user: CurrentUser }> => {
+export const requirePlatformAdmin = cache(async (): Promise<{ db: DbClient; user: CurrentUser; role: PlatformRole }> => {
   const { db, user } = await requireUser();
-  if (!(await isPlatformAdmin(db, user.id))) notFound();
-  return { db, user };
+  const role = await getPlatformRole(db, user.id);
+  if (!role) notFound();
+  return { db, user, role };
+});
+
+/**
+ * Acciones que cambian planes, cobros o el estado de un negocio: dueño o administrador de la
+ * plataforma, no agentes (ADR 0010). La base lo vuelve a verificar.
+ */
+export async function requirePlatformManager() {
+  const ctx = await requirePlatformAdmin();
+  if (!isPlatformManager(ctx.role)) throw new DbError('Solo un administrador de la plataforma puede hacer esto.', '42501');
+  return ctx;
+}
+
+/** Estado de los datos de facturación del negocio (ADR 0010), una vez por solicitud. */
+export const getBillingState = cache(async (businessId: string) => {
+  const { db } = await requireBusiness(businessId);
+  return getBusinessBilling(db, businessId);
 });
 
 /**
@@ -43,6 +60,9 @@ export async function requireWritableBusiness(businessId: string) {
   const ctx = await requireBusiness(businessId);
   if (ctx.business.suspended_at) {
     throw new DbError('Tu negocio está suspendido: el panel está en solo lectura. Escríbenos para reactivarlo.', 'P0001');
+  }
+  if ((await getBillingState(businessId))?.status === 'blocked') {
+    throw new DbError('Faltan los datos de facturación: el panel está en pausa hasta que el dueño los complete.', 'P0001');
   }
   return ctx;
 }

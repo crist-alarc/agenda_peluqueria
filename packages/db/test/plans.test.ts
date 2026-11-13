@@ -68,7 +68,7 @@ beforeAll(async () => {
   receptionist = new Session(pool, await createUser(pool, 'recepcion@planes.cl'));
   server = new Session(pool, null, 'service_role');
   anon = new Session(pool, null);
-  await pool.query(`insert into public.platform_admins (user_id) values ($1)`, [adminId]);
+  await pool.query(`insert into public.platform_admins (user_id, role) values ($1, 'owner')`, [adminId]);
 
   // Dos planes a la venta en Chile, con precio neto en CLP y USD
   await savePlan('emprende', features(), { CLP: 10000, USD: 1200 });
@@ -139,7 +139,7 @@ describe('alta con el plan elegido', () => {
 describe('solo la plataforma administra planes', () => {
   it('un dueño no puede crear planes ni cambiarse de plan', async () => {
     await expect(owner.query(`select public.app_admin_plans()`)).rejects.toThrow(/No autorizado/);
-    await expect(owner.query(`select public.app_admin_change_plan($1, 'pro')`, [business])).rejects.toThrow(/No autorizado/);
+    await expect(owner.query(`select public.app_admin_change_plan($1, 'pro')`, [business])).rejects.toThrow(/Solo un administrador/);
     await expect(owner.query(`update public.business_subscriptions set plan_code = 'pro'`)).rejects.toThrow(/permission denied/);
     await expect(anon.query(`select public.app_public_plans('CL')`)).rejects.toThrow(/permission denied/);
   });
@@ -219,7 +219,7 @@ describe('cambio de plan y funciones puntuales', () => {
 
 describe('suspensión', () => {
   it('suspendido: sin link público ni reservas nuevas, y los días no se cobran', async () => {
-    await expect(owner.query(`select public.app_admin_suspend($1, 'Falta de pago')`, [business])).rejects.toThrow(/No autorizado/);
+    await expect(owner.query(`select public.app_admin_suspend($1, 'Falta de pago')`, [business])).rejects.toThrow(/Solo un administrador/);
     await admin.query(`select public.app_admin_suspend($1, 'Falta de pago')`, [business]);
 
     const slug = (await one<{ slug: string }>(owner, `select slug from public.businesses where id = $1`, [business])).slug;

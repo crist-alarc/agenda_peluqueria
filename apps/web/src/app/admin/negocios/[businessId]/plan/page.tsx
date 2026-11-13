@@ -1,5 +1,8 @@
 import {
+  BILLING_DOCUMENTS,
   FEATURE_LABELS,
+  formatRut,
+  isPlatformManager,
   FEATURES,
   formatMoney,
   formatRate,
@@ -8,12 +11,22 @@ import {
   type Feature,
   type SubscriptionPeriod,
 } from '@agenda/core';
-import { getAdminBusinessPlan, listAdminClients, listAdminPlans, type AdminBusinessPlan } from '@agenda/db';
+import {
+  getAdminBusinessBilling,
+  getAdminBusinessPlan,
+  listAdminClients,
+  listAdminPlans,
+  type AdminBusinessBilling,
+  type AdminBusinessPlan,
+  type AdminPlan,
+} from '@agenda/db';
 import { Alert, Badge, Button, Checkbox, Field, Input, PageHeader, Select } from '@agenda/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActionForm, SubmitButton } from '@/components/action-form';
+import { BillingProfileForm } from '@/components/billing-profile-form';
 import { requirePlatformAdmin } from '@/lib/session';
+import { adminSaveBillingProfileAction, extendGraceAction, requestFreePlanAction } from '../../../approval-actions';
 import { addOverrideAction, changePlanAction, endOverrideAction, reactivateAction, suspendAction } from '../../../plan-actions';
 
 export const metadata = { title: 'Plan y cobro' };
@@ -22,6 +35,7 @@ const TZ = 'America/Santiago';
 const day = (d: string) => new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
 const dateTime = (iso: string) => new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeZone: TZ }).format(new Date(iso));
 const thisMonth = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit' }).format(new Date());
+const longDay = (d: string) => new Intl.DateTimeFormat('es-CL', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`));
 const monthName = (m: string) =>
   new Intl.DateTimeFormat('es-CL', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${m}-15T12:00:00Z`));
 
@@ -29,9 +43,15 @@ const monthName = (m: string) =>
 export default async function BusinessPlanPage({ params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(businessId)) notFound();
-  const { db } = await requirePlatformAdmin();
-  const [p, plans, clients] = await Promise.all([getAdminBusinessPlan(db, businessId), listAdminPlans(db), listAdminClients(db)]);
-  if (!p) notFound();
+  const { db, role } = await requirePlatformAdmin();
+  const [p, plans, clients, billing] = await Promise.all([
+    getAdminBusinessPlan(db, businessId),
+    listAdminPlans(db),
+    listAdminClients(db),
+    getAdminBusinessBilling(db, businessId),
+  ]);
+  if (!p || !billing) notFound();
+  const manager = isPlatformManager(role);
   const client = clients.find((c) => c.businesses.some((b) => b.id === businessId));
   const name = client?.businesses.find((b) => b.id === businessId)?.name ?? 'Negocio';
   const sub = p.subscription;
@@ -54,11 +74,14 @@ export default async function BusinessPlanPage({ params }: { params: Promise<{ b
 
       <div className="grid max-w-5xl gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-10">
+          <BillingData billing={billing} businessId={businessId} manager={manager} />
           <MonthPreview p={p} />
           <Periods p={p} />
-          <Features p={p} />
+          <Features p={p} manager={manager} />
         </div>
         <aside className="space-y-8">
+          <FreePlan billing={billing} plans={plans} p={p} manager={manager} />
+          {manager && (
           <section aria-labelledby="cambio">
             <h2 id="cambio" className="mb-2 font-semibold">
               Cambiar plan
@@ -71,7 +94,7 @@ export default async function BusinessPlanPage({ params }: { params: Promise<{ b
               <Field label="Plan nuevo">
                 <Select name="planCode" defaultValue={sub.planCode}>
                   {plans
-                    .filter((x) => x.active)
+                    .filter((x) => x.active && !x.isFree && x.currentVersionId)
                     .map((x) => (
                       <option key={x.code} value={x.code}>
                         {x.name}
@@ -86,7 +109,9 @@ export default async function BusinessPlanPage({ params }: { params: Promise<{ b
               <SubmitButton size="sm">Cambiar plan</SubmitButton>
             </ActionForm>
           </section>
+          )}
 
+          {manager && (
           <section aria-labelledby="suspension">
             <h2 id="suspension" className="mb-2 font-semibold">
               Suspensión
@@ -111,6 +136,7 @@ export default async function BusinessPlanPage({ params }: { params: Promise<{ b
               </ActionForm>
             )}
           </section>
+          )}
         </aside>
       </div>
     </>
@@ -198,7 +224,7 @@ function Periods({ p }: { p: AdminBusinessPlan }) {
   );
 }
 
-function Features({ p }: { p: AdminBusinessPlan }) {
+function Features({ p, manager }: { p: AdminBusinessPlan; manager: boolean }) {
   const usage: Partial<Record<Feature, number>> = { branches: p.usage.branches, resources: p.usage.resources };
   const active = p.overrides.filter((o) => !o.endedAt && (!o.expiresAt || Date.parse(o.expiresAt) > Date.now()));
   return (
@@ -247,6 +273,7 @@ function Features({ p }: { p: AdminBusinessPlan }) {
         </ul>
       )}
 
+      {manager && (
       <ActionForm action={addOverrideAction} className="grid gap-3 sm:grid-cols-2" resetOnSuccess aria-label="Función puntual">
         <input type="hidden" name="businessId" value={p.businessId} />
         <Field label="Función puntual">
@@ -274,6 +301,129 @@ function Features({ p }: { p: AdminBusinessPlan }) {
           </SubmitButton>
         </div>
       </ActionForm>
+      )}
+    </section>
+  );
+}
+
+function BillingData({ billing, businessId, manager }: { billing: AdminBusinessBilling; businessId: string; manager: boolean }) {
+  const f = billing.profile;
+  return (
+    <section aria-labelledby="facturacion">
+      <h2 id="facturacion" className="mb-1 text-lg font-semibold">
+        Datos de facturación
+      </h2>
+      {billing.status === 'ok' && f ? (
+        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+          <dt className="text-muted-foreground">Documento</dt>
+          <dd>{BILLING_DOCUMENTS[f.documentType]}</dd>
+          <dt className="text-muted-foreground">{f.documentType === 'boleta' ? 'Nombre' : 'Razón social'}</dt>
+          <dd>{f.legalName}</dd>
+          {f.taxId && (
+            <>
+              <dt className="text-muted-foreground">{f.country === 'CL' ? 'RUT' : 'Identificación'}</dt>
+              <dd className="tabular-nums">{f.country === 'CL' ? formatRut(f.taxId) : f.taxId}</dd>
+            </>
+          )}
+          {f.activity && (
+            <>
+              <dt className="text-muted-foreground">Giro</dt>
+              <dd>{f.activity}</dd>
+            </>
+          )}
+          {f.address && (
+            <>
+              <dt className="text-muted-foreground">Dirección</dt>
+              <dd>{[f.address, f.commune, f.city, f.country !== 'CL' ? f.country : null].filter(Boolean).join(', ')}</dd>
+            </>
+          )}
+          <dt className="text-muted-foreground">Email</dt>
+          <dd>{f.email}</dd>
+        </dl>
+      ) : (
+        <p className={`text-sm ${billing.status === 'blocked' ? 'text-destructive' : 'text-access-pending'}`}>
+          {billing.status === 'blocked'
+            ? `Faltan. El plazo venció el ${longDay(billing.graceUntil)}: el panel y el link público están en pausa.`
+            : `Faltan. Tiene plazo hasta el ${longDay(billing.graceUntil)}.`}
+        </p>
+      )}
+      {manager && billing.status !== 'ok' && (
+        <ActionForm action={extendGraceAction} className="mt-3 flex flex-wrap items-end gap-3" aria-label="Extender plazo">
+          <input type="hidden" name="businessId" value={businessId} />
+          <Field label="Dar plazo hasta">
+            <Input name="until" type="date" required />
+          </Field>
+          <SubmitButton size="sm" variant="outline">
+            Extender plazo
+          </SubmitButton>
+        </ActionForm>
+      )}
+      {manager && (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-medium">{f ? 'Corregir datos' : 'Completar a pedido del cliente'}</summary>
+          <div className="mt-4">
+            <BillingProfileForm action={adminSaveBillingProfileAction} businessId={businessId} initial={f} />
+          </div>
+        </details>
+      )}
+    </section>
+  );
+}
+
+function FreePlan({ billing, plans, p, manager }: { billing: AdminBusinessBilling; plans: AdminPlan[]; p: AdminBusinessPlan; manager: boolean }) {
+  const freePlans = plans.filter((x) => x.active && x.isFree && x.currentVersionId);
+  const paidPlans = plans.filter((x) => x.active && !x.isFree && x.currentVersionId);
+  const pending = billing.freeRequests.find((r) => r.status === 'pending');
+  const free = billing.freePlan;
+  return (
+    <section aria-labelledby="free">
+      <h2 id="free" className="mb-2 font-semibold">
+        Plan free
+      </h2>
+      {free && (
+        <p className="mb-3 text-sm">
+          Tiene {p.subscription.planName} {free.endsOn ? `hasta el ${longDay(free.endsOn)}` : 'sin fecha de término'}. Autorizado por{' '}
+          {free.approvedBy ?? 'un administrador'}: {free.reason}.
+        </p>
+      )}
+      {pending ? (
+        <p className="text-sm text-access-pending">
+          Hay una solicitud esperando autorización, pedida por {pending.requestedBy ?? 'alguien del equipo'}. Se decide en Aprobaciones.
+        </p>
+      ) : freePlans.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No hay planes free. Créalo en Planes marcando “Plan free”.</p>
+      ) : (
+        <ActionForm action={requestFreePlanAction} className="space-y-3" aria-label="Plan free">
+          <input type="hidden" name="businessId" value={p.businessId} />
+          <Field label="Plan free">
+            <Select name="planCode">
+              {freePlans.map((x) => (
+                <option key={x.code} value={x.code}>
+                  {x.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Hasta el día" hint="Vacío = sin término">
+            <Input name="endsOn" type="date" />
+          </Field>
+          <Field label="Después pasa a" hint="Solo si tiene fecha de término">
+            <Select name="nextPlanCode" defaultValue={p.subscription.planCode}>
+              {paidPlans.map((x) => (
+                <option key={x.code} value={x.code}>
+                  {x.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Motivo">
+            <Input name="reason" required minLength={3} placeholder="Ej. Piloto de los juegos inflables" />
+          </Field>
+          <SubmitButton size="sm" variant="outline">
+            {manager ? 'Autorizar plan free' : 'Pedir autorización'}
+          </SubmitButton>
+        </ActionForm>
+      )}
     </section>
   );
 }

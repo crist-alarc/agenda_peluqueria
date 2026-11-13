@@ -24,8 +24,9 @@ Monorepo pnpm según las directrices (ver `README.md`).
 - **Regla del dueño:** todo tiempo que afecte a usuarios es configurable por negocio (ADR 0004).
 - **Diseño de pantallas:** usar siempre el skill `anthropic-skills:frontend-design` (indicación del dueño, 2026-11-12).
 - **Consola de la plataforma `/admin`** (ADR 0008): los clientes son los dueños de negocios; soporte solo con acceso
-  aprobado por el negocio y sin datos de clientes finales. A1 y A2 hechas (planes, impuestos y
-  prorrateo, ADR 0009); sigue A3 (facturación).
+  aprobado por el negocio y sin datos de clientes finales. A1, A2 (planes, impuestos y prorrateo, ADR 0009) y
+  A3a (roles, aprobaciones, planes free y datos de facturación, ADR 0010) hechas; sigue A3b (cobros mensuales),
+  luego A4 (ejecutivos comerciales).
 
 Comandos de verificación antes de cada push: `pnpm typecheck`, `pnpm test`, `pnpm test:db`
 (PostgreSQL local) y, si cambia la interfaz, `pnpm --filter @agenda/web e2e` con Supabase local.

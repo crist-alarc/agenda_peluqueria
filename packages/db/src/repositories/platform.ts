@@ -3,6 +3,7 @@
  * negocios: todo pasa por funciones app_admin_* que exigen ser administrador de
  * la plataforma, y la configuración solo con un acceso de soporte aprobado.
  */
+import type { PlatformRole } from '@agenda/core';
 import type { DbClient } from '../client';
 import type { Tables } from '../database.types';
 import { unwrap, unwrapMaybe } from '../errors';
@@ -11,6 +12,26 @@ import { unwrap, unwrapMaybe } from '../errors';
 export async function isPlatformAdmin(db: DbClient, userId: string): Promise<boolean> {
   const row = unwrapMaybe(await db.from('platform_admins').select('user_id').eq('user_id', userId).maybeSingle());
   return row != null;
+}
+
+/** Rol en la plataforma (ADR 0010), o null si no es parte del equipo. */
+export async function getPlatformRole(db: DbClient, userId: string): Promise<PlatformRole | null> {
+  const row = unwrapMaybe(await db.from('platform_admins').select('role').eq('user_id', userId).maybeSingle());
+  return (row?.role as PlatformRole | undefined) ?? null;
+}
+
+export type PlatformMember = { userId: string; name: string | null; email: string | null; role: PlatformRole; createdAt: string; isMe: boolean };
+
+export async function listPlatformTeam(db: DbClient): Promise<PlatformMember[]> {
+  return (unwrap(await db.rpc('app_admin_team')) ?? []) as unknown as PlatformMember[];
+}
+
+export async function setPlatformTeamMember(db: DbClient, email: string, role: PlatformRole): Promise<void> {
+  unwrapMaybe(await db.rpc('app_admin_set_team_member', { p_email: email, p_role: role }));
+}
+
+export async function removePlatformTeamMember(db: DbClient, userId: string): Promise<void> {
+  unwrapMaybe(await db.rpc('app_admin_remove_team_member', { p_user_id: userId }));
 }
 
 export type SupportState = { id: string; status: SupportStatus; expiresAt: string | null; createdAt: string };

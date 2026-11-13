@@ -1,8 +1,9 @@
 import { BILLING_CURRENCY_CODES, DOCUMENT_TYPES, formatRate } from '@agenda/core';
-import { getBillingSetup } from '@agenda/db';
+import { getBillingSetup, getPlatformSettings } from '@agenda/db';
 import { Checkbox, Field, Input, PageHeader, Select } from '@agenda/ui';
 import { ActionForm, SubmitButton } from '@/components/action-form';
 import { requirePlatformAdmin } from '@/lib/session';
+import { saveSettingsAction } from '../approval-actions';
 import { saveBillingEntityAction, saveTaxRuleAction } from '../plan-actions';
 
 export const metadata = { title: 'Facturación' };
@@ -12,8 +13,8 @@ export const metadata = { title: 'Facturación' };
  * "Resto del mundo" aplica a cualquier país sin regla propia.
  */
 export default async function BillingSetupPage() {
-  const { db } = await requirePlatformAdmin();
-  const setup = await getBillingSetup(db);
+  const { db, role } = await requirePlatformAdmin();
+  const [setup, settings] = await Promise.all([getBillingSetup(db), getPlatformSettings(db)]);
 
   return (
     <>
@@ -84,6 +85,27 @@ export default async function BillingSetupPage() {
             </ul>
           </section>
         ))}
+        <section aria-labelledby="gracia">
+          <h2 id="gracia" className="mb-1 font-semibold">
+            Plazo para los datos de facturación
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Un negocio nuevo funciona sin datos de facturación hasta el último día hábil de su mes de alta. Si le quedan menos días que este
+            mínimo, el plazo pasa al último día hábil del mes siguiente.
+          </p>
+          {role === 'owner' ? (
+            <ActionForm action={saveSettingsAction} className="flex flex-wrap items-end gap-3" aria-label="Plazo de facturación">
+              <Field label="Mínimo de días corridos">
+                <Input name="billingGraceMinDays" type="number" min={0} max={90} defaultValue={settings.billingGraceMinDays} className="w-28" />
+              </Field>
+              <SubmitButton size="sm" variant="outline">
+                Guardar
+              </SubmitButton>
+            </ActionForm>
+          ) : (
+            <p className="text-sm">Mínimo: {settings.billingGraceMinDays} días corridos.</p>
+          )}
+        </section>
         <p className="text-sm text-muted-foreground">
           La exención de IVA para clientes de otros países (exportación de servicios) tiene requisitos ante el SII. Confírmalo con tu contador
           antes de facturar fuera de Chile.

@@ -19,6 +19,8 @@ export type PlanFormResult =
         description: string | null;
         isPublic: boolean;
         active: boolean;
+        /** Plan sin cobro: solo se asigna con autorización (ADR 0010). */
+        isFree: boolean;
         offeredCountries: string[];
         features: PlanFeatureSpec[];
         prices: Record<string, number>;
@@ -80,11 +82,12 @@ export function parsePlanForm(form: Record<string, unknown>): PlanFormResult {
       code,
       name,
       description: text(form.description) || null,
-      isPublic: isOn(form.isPublic),
+      isPublic: isOn(form.isPublic) && !isOn(form.isFree),
       active: isOn(form.active),
+      isFree: isOn(form.isFree),
       offeredCountries,
       features,
-      prices,
+      prices: isOn(form.isFree) ? {} : prices,
       note: text(form.note) || null,
     },
   };
