@@ -83,14 +83,14 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
     const form = page.getByRole('form', { name: 'Datos de facturación' });
     await form.getByRole('radio', { name: /Factura/ }).first().check();
     await form.getByLabel('Razón social').fill('Peluquería Facturable SpA');
-    await form.getByLabel('RUT').fill('76.086.428-6');
+    await form.getByRole('textbox', { name: /^RUT/ }).fill('76.086.428-6');
     await form.getByLabel('Giro').fill('Peluquería');
     await form.getByLabel('Dirección').fill('Av. Siempre Viva 123');
     await form.getByLabel('Comuna').fill('Maipú');
     await form.getByLabel('Email para recibir los documentos').fill(owner.email);
     await form.getByRole('button', { name: 'Guardar datos de facturación' }).click();
     await expect(form.getByText(/RUT no es válido/)).toBeVisible();
-    await form.getByLabel('RUT').fill('76.086.428-5');
+    await form.getByRole('textbox', { name: /^RUT/ }).fill('76.086.428-5');
     await form.getByRole('button', { name: 'Guardar datos de facturación' }).click();
     await expect(form.getByText(/Datos de facturación guardados/)).toBeVisible();
 
