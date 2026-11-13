@@ -19,7 +19,7 @@
 | 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. PR #13, **en producción** desde el 2026-11-12 |
 | Consola `/admin` · A1 | Hecha (ADR 0008): clientes de la plataforma, ficha, acceso de soporte aprobado por el negocio, vista de solo lectura. PR #15, **en producción** desde el 2026-11-12; el dueño es administrador |
 | Consola `/admin` · A2 | Hecha (ADR 0009): empresas emisoras e impuestos por país, planes con versiones (CLP y USD, netos), elegir plan al registrarse, tramos y prorrateo, funciones puntuales, suspensión. En producción desde el 2026-11-12 |
-| Consola `/admin` · A3a | Hecha (ADR 0010): roles de la plataforma (dueño, administrador, agente), aprobación de planes por el dueño, planes free con autorización, datos de facturación obligatorios con días de gracia y pausa. **Falta producción** (migración `platform_roles_billing_profiles`) |
+| Consola `/admin` · A3a | Hecha (ADR 0010): roles de la plataforma (dueño, administrador, agente), aprobación de planes por el dueño, planes free con autorización, datos de facturación obligatorios con días de gracia y pausa. PR #17, en producción desde el 2026-11-13 |
 | Consola `/admin` · A3b | **Siguiente**: cobros mensuales a mes vencido (folio SII, pagado, anulado), sucursales por días, período de prueba, alertas de no pago, Excel |
 | Consola `/admin` · A4 | Ejecutivos comerciales y acuerdos comerciales (ADR 0010, sección 6) |
 | 3B · Reserva de arriendo | Después de la consola (decisión del dueño del 2026-11-12) |
@@ -114,7 +114,7 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261119120000_platform_roles_billing_profiles` (**local, falta producción**), `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Migraciones | `20261119120000_platform_roles_billing_profiles`, `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
 | Tests (A3a) | core 134 · notifications 7 · base de datos 167 · Playwright (corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
@@ -182,6 +182,12 @@
   huella de las 13 funciones es igual a la local. El negocio del dueño quedó en el plan `completo`, con
   comisiones activas. Tipos regenerados. En el Security Advisor no hay avisos nuevos: las funciones
   `app_*` para usuarios con sesión son intencionales y validan permisos por dentro.
+- Consola A3a (2026-11-13): `platform_roles_billing_profiles` aplicada **a mano por el dueño desde el SQL Editor**,
+  porque el conector de Supabase falló con un error 502 en esa sesión. Se registró en
+  `supabase_migrations.schema_migrations`. Verificado: rol `owner`, plazo 2026-11-30 en los negocios existentes,
+  mínimo 15 días y funciones creadas. **Pendiente cuando vuelva el conector:** regenerar `database.types.ts` desde
+  producción (hoy está editado a mano) y revisar el Security Advisor.
+  - Si el SQL Editor responde "column role already exists", la migración ya estaba aplicada: no repetirla.
 - Consola A2 (2026-11-12): `platform_plans` y `platform_plans_advisor_fix` aplicadas. Huella igual a la local en
   las 29 funciones nuevas o cambiadas. Los 2 negocios existentes quedaron con versión de plan y su primer tramo.
   Tipos regenerados desde producción. Security Advisor: `app.platform_today` sin search_path fijo (corregido con
