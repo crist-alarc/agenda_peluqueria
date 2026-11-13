@@ -48,7 +48,11 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
     const item = page.getByRole('listitem').filter({ hasText: planName });
     await expect(item.getByText('$12.000')).toBeVisible();
     await item.getByRole('button', { name: 'Aprobar' }).click();
-    await expect(page.getByText(/Aprobada/)).toBeVisible();
+    // Aprobada: sale de la bandeja (con ella, el mensaje) y el plan queda vigente
+    await expect(item).toHaveCount(0);
+    await page.goto(`/admin/planes/${planCode}`);
+    await expect(page.getByText(/espera la aprobación/)).toHaveCount(0);
+    await expect(page.getByText('Vigente')).toBeVisible();
 
     await page.goto('/admin/planes/nuevo');
     const form = page.getByRole('form', { name: 'Plan' });
@@ -103,6 +107,6 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
     await form.getByLabel('Plan free').selectOption(freeCode);
     await form.getByLabel('Motivo').fill('Piloto de prueba');
     await form.getByRole('button', { name: 'Autorizar plan free' }).click();
-    await expect(page.getByText(/Plan free autorizado/)).toBeVisible();
+    await expect(page.getByText(/sin fecha de término\. Autorizado por/)).toBeVisible();
   });
 });
