@@ -1,10 +1,12 @@
 import { can, type Permission } from '@agenda/core';
-import { isPlatformAdmin, listSupportRequests } from '@agenda/db';
+import { getPlatformRole, listSupportRequests } from '@agenda/db';
 import { Badge, Button } from '@agenda/ui';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { BillingGate } from '@/components/billing-gate';
+import { BillingBlocked, BillingGraceNotice } from '@/components/billing-notice';
 import { NavLink } from '@/components/nav-link';
-import { requireBusiness } from '@/lib/session';
+import { getBillingState, requireBusiness } from '@/lib/session';
 import { t } from '@/lib/texts';
 import { signOutAction } from '../../(auth)/actions';
 
@@ -32,10 +34,12 @@ export default async function BusinessLayout({
   const { businessId } = await params;
   const { db, business, membership, user, canApproveSupport } = await requireBusiness(businessId);
   const base = `/panel/${business.id}`;
-  const [requests, platformAdmin] = await Promise.all([
+  const [requests, platformRole, billing] = await Promise.all([
     canApproveSupport ? listSupportRequests(db, business.id, 1) : Promise.resolve([]),
-    isPlatformAdmin(db, user.id),
+    getPlatformRole(db, user.id),
+    getBillingState(business.id),
   ]);
+  const platformAdmin = platformRole !== null;
   const pendingSupport = requests.find((r) => r.status === 'pending');
 
   return (
@@ -56,6 +60,7 @@ export default async function BusinessLayout({
               {item.label}
             </NavLink>
           ))}
+          {membership.role === 'owner' && <NavLink href={`${base}/facturacion`}>Facturación</NavLink>}
           {canApproveSupport && <NavLink href={`${base}/soporte`}>Soporte</NavLink>}
         </nav>
         {/* Cuenta: visible también en el teléfono (antes solo en pantallas grandes) */}
@@ -104,7 +109,14 @@ export default async function BusinessLayout({
             </Link>
           </div>
         )}
-        {children}
+        {billing?.status === 'grace' && <BillingGraceNotice billing={billing} base={base} />}
+        {billing?.status === 'blocked' ? (
+          <BillingGate base={base} gate={<BillingBlocked billing={billing} base={base} />}>
+            {children}
+          </BillingGate>
+        ) : (
+          children
+        )}
       </main>
     </div>
   );

@@ -45,11 +45,15 @@ export default async function PlansPage() {
                       <span className="block text-xs font-normal text-muted-foreground">
                         Versión {v?.version ?? 1}, {clients} {clients === 1 ? 'negocio' : 'negocios'}
                       </span>
-                      {!p.isPublic && (
-                        <Badge variant="muted" className="mt-1">
-                          No se ofrece
-                        </Badge>
-                      )}
+                      <span className="mt-1 flex flex-wrap gap-1">
+                        {p.isFree && <Badge variant="outline">Free, con autorización</Badge>}
+                        {!p.isPublic && !p.isFree && <Badge variant="muted">No se ofrece</Badge>}
+                        {p.versions.some((x) => x.status === 'pending') && (
+                          <Badge variant="outline" className="border-access-pending/60 text-access-pending">
+                            {p.currentVersionId ? 'Cambio por aprobar' : 'Por aprobar'}
+                          </Badge>
+                        )}
+                      </span>
                     </th>
                   );
                 })}
@@ -65,7 +69,7 @@ export default async function PlansPage() {
                     const price = current(p)?.prices[c];
                     return (
                       <td key={p.code} className="tabular-nums">
-                        {price === undefined ? <span className="text-muted-foreground">Sin precio</span> : formatMoney(price, c)}
+                        {p.isFree ? <span className="text-muted-foreground">Sin cobro</span> : price === undefined ? <span className="text-muted-foreground">Sin precio</span> : formatMoney(price, c)}
                       </td>
                     );
                   })}

@@ -718,6 +718,57 @@ export type Database = {
           },
         ]
       }
+      business_billing_profiles: {
+        Row: {
+          activity: string | null
+          address: string | null
+          business_id: string
+          city: string | null
+          commune: string | null
+          country: string
+          created_at: string
+          document_type: string
+          email: string
+          id: string
+          legal_name: string
+          tax_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activity?: string | null
+          address?: string | null
+          business_id: string
+          city?: string | null
+          commune?: string | null
+          country?: string
+          created_at?: string
+          document_type: string
+          email: string
+          id?: string
+          legal_name: string
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activity?: string | null
+          address?: string | null
+          business_id?: string
+          city?: string | null
+          commune?: string | null
+          country?: string
+          created_at?: string
+          document_type?: string
+          email?: string
+          id?: string
+          legal_name?: string
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       business_entitlements: {
         Row: {
           business_id: string
@@ -809,6 +860,9 @@ export type Database = {
           billing_entity_id: string | null
           business_id: string
           currency: string
+          free_grant_id: string | null
+          free_until: string | null
+          next_plan_code: string | null
           plan_code: string
           plan_version_id: string
           started_at: string
@@ -818,6 +872,9 @@ export type Database = {
           billing_entity_id?: string | null
           business_id: string
           currency: string
+          free_grant_id?: string | null
+          free_until?: string | null
+          next_plan_code?: string | null
           plan_code: string
           plan_version_id: string
           started_at?: string
@@ -827,6 +884,9 @@ export type Database = {
           billing_entity_id?: string | null
           business_id?: string
           currency?: string
+          free_grant_id?: string | null
+          free_until?: string | null
+          next_plan_code?: string | null
           plan_code?: string
           plan_version_id?: string
           started_at?: string
@@ -865,6 +925,7 @@ export type Database = {
       }
       businesses: {
         Row: {
+          billing_grace_until: string
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours: number
           confirmation_cutoff_hours: number
@@ -893,6 +954,7 @@ export type Database = {
           timezone: string
         }
         Insert: {
+          billing_grace_until?: string
           booking_mode: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
           confirmation_cutoff_hours?: number
@@ -921,6 +983,7 @@ export type Database = {
           timezone?: string
         }
         Update: {
+          billing_grace_until?: string
           booking_mode?: Database["public"]["Enums"]["booking_mode"]
           cancellation_hours?: number
           confirmation_cutoff_hours?: number
@@ -1235,6 +1298,48 @@ export type Database = {
           },
         ]
       }
+      free_plan_grants: {
+        Row: {
+          business_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          ends_on: string | null
+          id: string
+          next_plan_code: string | null
+          plan_code: string
+          reason: string
+          requested_by: string | null
+          status: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          ends_on?: string | null
+          id?: string
+          next_plan_code?: string | null
+          plan_code: string
+          reason: string
+          requested_by?: string | null
+          status?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          ends_on?: string | null
+          id?: string
+          next_plan_code?: string | null
+          plan_code?: string
+          reason?: string
+          requested_by?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       holidays: {
         Row: {
           date: string
@@ -1468,31 +1573,43 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
           features: Json
           id: string
           note: string | null
           plan_code: string
           prices: Json
+          status: string
           version: number
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
           features: Json
           id?: string
           note?: string | null
           plan_code: string
           prices?: Json
+          status?: string
           version: number
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
           features?: Json
           id?: string
           note?: string | null
           plan_code?: string
           prices?: Json
+          status?: string
           version?: number
         }
         Relationships: [
@@ -1518,6 +1635,7 @@ export type Database = {
           code: string
           current_version_id: string | null
           description: string | null
+          is_free: boolean
           is_public: boolean
           name: string
           offered_countries: string[]
@@ -1528,6 +1646,7 @@ export type Database = {
           code: string
           current_version_id?: string | null
           description?: string | null
+          is_free?: boolean
           is_public?: boolean
           name: string
           offered_countries?: string[]
@@ -1538,6 +1657,7 @@ export type Database = {
           code?: string
           current_version_id?: string | null
           description?: string | null
+          is_free?: boolean
           is_public?: boolean
           name?: string
           offered_countries?: string[]
@@ -1555,15 +1675,21 @@ export type Database = {
       }
       platform_admins: {
         Row: {
+          added_by: string | null
           created_at: string
+          role: string
           user_id: string
         }
         Insert: {
+          added_by?: string | null
           created_at?: string
+          role?: string
           user_id: string
         }
         Update: {
+          added_by?: string | null
           created_at?: string
+          role?: string
           user_id?: string
         }
         Relationships: [
@@ -1575,6 +1701,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_settings: {
+        Row: {
+          billing_grace_min_days: number
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          billing_grace_min_days?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          billing_grace_min_days?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       professionals: {
         Row: {
@@ -2225,7 +2369,14 @@ export type Database = {
         }
         Returns: string
       }
+      app_admin_approvals: { Args: never; Returns: Json }
       app_admin_billing_setup: { Args: never; Returns: Json }
+      app_admin_business_billing: {
+        Args: {
+          p_business_id: string
+        }
+        Returns: Json
+      }
       app_admin_business_plan: {
         Args: { p_business_id: string }
         Returns: Json
@@ -2239,8 +2390,30 @@ export type Database = {
         Returns: undefined
       }
       app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
+      app_admin_decide_free_plan: {
+        Args: {
+          p_approve: boolean
+          p_grant_id: string
+        }
+        Returns: undefined
+      }
+      app_admin_decide_plan_version: {
+        Args: {
+          p_approve: boolean
+          p_note?: string
+          p_version_id: string
+        }
+        Returns: undefined
+      }
       app_admin_end_override: {
         Args: { p_override_id: string }
+        Returns: undefined
+      }
+      app_admin_extend_billing_grace: {
+        Args: {
+          p_business_id: string
+          p_until: string
+        }
         Returns: undefined
       }
       app_admin_migrate_plan_version: {
@@ -2251,6 +2424,22 @@ export type Database = {
       app_admin_reactivate: {
         Args: { p_business_id: string; p_note?: string }
         Returns: undefined
+      }
+      app_admin_remove_team_member: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      app_admin_request_free_plan: {
+        Args: {
+          p_business_id: string
+          p_ends_on: string
+          p_next_plan_code: string
+          p_plan_code: string
+          p_reason: string
+        }
+        Returns: string
       }
       app_admin_request_support: {
         Args: { p_business_id: string; p_hours: number; p_reason: string }
@@ -2265,12 +2454,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      app_admin_save_billing_profile: {
+        Args: {
+          p_business_id: string
+          p_profile: Json
+        }
+        Returns: undefined
+      }
       app_admin_save_plan: {
         Args: {
           p_active: boolean
           p_code: string
           p_description: string
           p_features: Json
+          p_is_free?: boolean
           p_is_public: boolean
           p_name: string
           p_note?: string
@@ -2278,6 +2475,12 @@ export type Database = {
           p_prices: Json
         }
         Returns: string
+      }
+      app_admin_save_settings: {
+        Args: {
+          p_billing_grace_min_days: number
+        }
+        Returns: undefined
       }
       app_admin_save_tax_rule: {
         Args: {
@@ -2289,6 +2492,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      app_admin_set_team_member: {
+        Args: {
+          p_email: string
+          p_role: string
+        }
+        Returns: undefined
+      }
+      app_admin_settings: { Args: never; Returns: Json }
       app_admin_support_snapshot: {
         Args: { p_business_id: string }
         Returns: Json
@@ -2297,6 +2508,7 @@ export type Database = {
         Args: { p_business_id: string; p_reason: string }
         Returns: undefined
       }
+      app_admin_team: { Args: never; Returns: Json }
       app_booking_commission_data: {
         Args: { p_booking_id: string }
         Returns: Json
@@ -2314,6 +2526,12 @@ export type Database = {
       app_bookings_missing_commissions: {
         Args: { p_business_id: string; p_to: string }
         Returns: string[]
+      }
+      app_business_billing: {
+        Args: {
+          p_business_id: string
+        }
+        Returns: Json
       }
       app_claim_reminder: { Args: { p_booking_id: string }; Returns: boolean }
       app_create_booking: {
@@ -2377,6 +2595,13 @@ export type Database = {
       }
       app_revoke_support_access: {
         Args: { p_request_id: string }
+        Returns: undefined
+      }
+      app_save_billing_profile: {
+        Args: {
+          p_business_id: string
+          p_profile: Json
+        }
         Returns: undefined
       }
       app_set_item_shares: {

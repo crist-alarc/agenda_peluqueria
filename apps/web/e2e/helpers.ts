@@ -89,7 +89,7 @@ export async function enableFeature(businessId: string, feature: string): Promis
 }
 
 /** Marca a una cuenta como administradora de la plataforma (ADR 0008). Solo con la clave de servicio. */
-export async function makePlatformAdmin(email: string): Promise<void> {
+export async function makePlatformAdmin(email: string, role: 'owner' | 'admin' | 'agent' = 'owner'): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SECRET_KEY para las pruebas');
@@ -100,7 +100,20 @@ export async function makePlatformAdmin(email: string): Promise<void> {
   const res = await fetch(`${url}/rest/v1/platform_admins`, {
     method: 'POST',
     headers: { ...headers, Prefer: 'return=minimal' },
-    body: JSON.stringify({ user_id: id }),
+    body: JSON.stringify({ user_id: id, role }),
   });
   if (!res.ok) throw new Error(`No se pudo crear el administrador: ${res.status} ${await res.text()}`);
+}
+
+/** Cambia el plazo de los datos de facturación de un negocio (ADR 0010). Solo con la clave de servicio. */
+export async function setBillingGrace(businessId: string, until: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SECRET_KEY para las pruebas');
+  const res = await fetch(`${url}/rest/v1/businesses?id=eq.${businessId}`, {
+    method: 'PATCH',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ billing_grace_until: until }),
+  });
+  if (!res.ok) throw new Error(`No se pudo cambiar el plazo: ${res.status} ${await res.text()}`);
 }

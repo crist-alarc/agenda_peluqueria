@@ -19,7 +19,9 @@
 | 3A · Catálogo de arriendo | Hecha (ADR 0007): día completo y servicios en paralelo, ficha y fotos (Storage), zonas de despacho libres, tope de camiones con aviso, precios ocultos, catálogo y ficha en `/r/<slug>`. PR #13, **en producción** desde el 2026-11-12 |
 | Consola `/admin` · A1 | Hecha (ADR 0008): clientes de la plataforma, ficha, acceso de soporte aprobado por el negocio, vista de solo lectura. PR #15, **en producción** desde el 2026-11-12; el dueño es administrador |
 | Consola `/admin` · A2 | Hecha (ADR 0009): empresas emisoras e impuestos por país, planes con versiones (CLP y USD, netos), elegir plan al registrarse, tramos y prorrateo, funciones puntuales, suspensión. En producción desde el 2026-11-12 |
-| Consola `/admin` · A3 | **Siguiente**: facturación a los clientes (manual con el SII) |
+| Consola `/admin` · A3a | Hecha (ADR 0010): roles de la plataforma (dueño, administrador, agente), aprobación de planes por el dueño, planes free con autorización, datos de facturación obligatorios con días de gracia y pausa. **Falta producción** (migración `platform_roles_billing_profiles`) |
+| Consola `/admin` · A3b | **Siguiente**: cobros mensuales a mes vencido (folio SII, pagado, anulado), sucursales por días, período de prueba, alertas de no pago, Excel |
+| Consola `/admin` · A4 | Ejecutivos comerciales y acuerdos comerciales (ADR 0010, sección 6) |
 | 3B · Reserva de arriendo | Después de la consola (decisión del dueño del 2026-11-12) |
 
 **Quedó fuera de la Fase 2, a propósito:**
@@ -67,6 +69,21 @@
     - prorrateo por días calendario desde el día siguiente al cambio;
     - los días suspendidos no se cobran y solo la plataforma suspende;
     - el negocio elige su plan al registrarse.
+17. (2026-11-13) Facturación a los clientes (ADR 0010):
+    - se cobra a mes vencido;
+    - datos de facturación por negocio, obligatorios: plazo hasta el último día hábil del mes del alta (mínimo
+      15 días, configurable); vencido, el panel y el link público se pausan;
+    - roles de la plataforma: el dueño aprueba los planes; un administrador autoriza los planes free;
+    - plan free por negocio, con fecha de término opcional (el de los hermanos, indefinido);
+    - sucursales adicionales cobradas por días de uso;
+    - período de prueba configurable por plan;
+    - alertas de no pago para decidir la suspensión;
+    - exportación a Excel (`.xlsx`).
+18. (2026-11-13) Ejecutivos comerciales (A4): venden la plataforma, no son los vendedores de la Fase 4.
+    - Trabajan con acuerdos comerciales a mes vencido, con inicio y fin (o indefinido).
+    - Comisión en % o monto fijo, que puede variar por plan; se gana al facturar o al pagar, según el acuerdo.
+    - Modalidad de reventa: la empresa del ejecutivo cobra a sus clientes y paga licencia; esos negocios no se
+      cortan. El dueño se hace cargo si el ejecutivo no paga (revisar con abogado).
 
 ## 3. Tareas pendientes del dueño (fuera del código)
 
@@ -97,8 +114,8 @@
 | Supabase | Proyecto "App Agenda Peluquería", id `yzqvvmsnpqjntuqeiskf`, región São Paulo |
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
-| Migraciones | `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
-| Tests (A2) | core 124 · notifications 7 · base de datos 149 · Playwright 46 (corren en el CI) |
+| Migraciones | `20261119120000_platform_roles_billing_profiles` (**local, falta producción**), `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
+| Tests (A3a) | core 134 · notifications 7 · base de datos 167 · Playwright (corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
 ### Mapa del código (dónde está cada cosa)

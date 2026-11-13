@@ -13,6 +13,11 @@ export type PlanVersion = {
   prices: Record<string, number>;
   note: string | null;
   createdAt: string;
+  /** Las versiones propuestas por un administrador esperan la aprobación del dueño (ADR 0010). */
+  status: 'pending' | 'approved' | 'rejected';
+  createdBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
   /** Negocios que tienen esta versión. */
   businesses: number;
 };
@@ -23,6 +28,7 @@ export type AdminPlan = {
   description: string | null;
   isPublic: boolean;
   active: boolean;
+  isFree: boolean;
   sortOrder: number;
   offeredCountries: string[];
   currentVersionId: string | null;
@@ -40,6 +46,7 @@ export type SavePlanInput = {
   description: string | null;
   isPublic: boolean;
   active: boolean;
+  isFree: boolean;
   offeredCountries: string[];
   features: PlanFeatureSpec[];
   prices: Record<string, number>;
@@ -58,6 +65,7 @@ export async function savePlan(db: DbClient, input: SavePlanInput): Promise<stri
       p_features: input.features,
       p_prices: input.prices,
       p_note: input.note ?? undefined,
+      p_is_free: input.isFree,
     }),
   );
 }
@@ -218,4 +226,65 @@ export type MyPlan = {
 
 export async function getMyPlan(db: DbClient, businessId: string): Promise<MyPlan | null> {
   return (unwrapMaybe(await db.rpc('app_my_plan', { p_business_id: businessId })) ?? null) as unknown as MyPlan | null;
+}
+
+// ---------------------------------------------------------------------------
+// Aprobaciones (ADR 0010)
+// ---------------------------------------------------------------------------
+export async function decidePlanVersion(db: DbClient, versionId: string, approve: boolean, note?: string): Promise<void> {
+  unwrapMaybe(await db.rpc('app_admin_decide_plan_version', { p_version_id: versionId, p_approve: approve, p_note: note }));
+}
+
+export async function requestFreePlan(
+  db: DbClient,
+  input: { businessId: string; planCode: string; endsOn: string | null; nextPlanCode: string | null; reason: string },
+): Promise<string> {
+  return unwrap(
+    await db.rpc('app_admin_request_free_plan', {
+      p_business_id: input.businessId,
+      p_plan_code: input.planCode,
+      // La función acepta null (plan free indefinido); el generador de tipos no lo refleja
+      p_ends_on: input.endsOn as string,
+      p_next_plan_code: input.nextPlanCode as string,
+      p_reason: input.reason,
+    }),
+  );
+}
+
+export async function decideFreePlan(db: DbClient, grantId: string, approve: boolean): Promise<void> {
+  unwrapMaybe(await db.rpc('app_admin_decide_free_plan', { p_grant_id: grantId, p_approve: approve }));
+}
+
+export type PendingPlanVersion = {
+  id: string;
+  planCode: string;
+  planName: string;
+  isNewPlan: boolean;
+  version: number;
+  features: PlanFeatureSpec[];
+  prices: Record<string, number>;
+  note: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  currentFeatures: PlanFeatureSpec[] | null;
+  currentPrices: Record<string, number> | null;
+};
+
+export type PendingFreePlan = {
+  id: string;
+  businessId: string;
+  businessName: string;
+  planName: string;
+  endsOn: string | null;
+  nextPlanName: string | null;
+  reason: string;
+  createdAt: string;
+  requestedBy: string | null;
+  isMine: boolean;
+};
+
+export type Approvals = { planVersions: PendingPlanVersion[]; freePlans: PendingFreePlan[] };
+
+export async function listApprovals(db: DbClient): Promise<Approvals> {
+  return (unwrap(await db.rpc('app_admin_approvals')) ?? { planVersions: [], freePlans: [] }) as unknown as Approvals;
 }
