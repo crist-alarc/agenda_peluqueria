@@ -72,6 +72,12 @@ begin
   if v_included not between 1 and 1000 or v_trial not between 0 and 365 then
     raise exception 'Sucursales incluidas (desde 1) o días de prueba (0 a 365) no válidos' using errcode = 'P0001';
   end if;
+  -- Todo plan incluye al menos una sucursal: sin ella, el negocio no puede crear la primera al registrarse
+  if not exists (select 1 from jsonb_array_elements(p_features) f
+                 where f ->> 'feature' = 'branches' and coalesce((f ->> 'enabled')::boolean, false)
+                   and (f ->> 'limit' is null or (f ->> 'limit')::int >= v_included)) then
+    raise exception 'El plan debe incluir la función Sucursales, con un límite no menor que las sucursales incluidas' using errcode = 'P0001';
+  end if;
 
   select * into v_plan from public.plans where code = p_code for update;
   if not found then

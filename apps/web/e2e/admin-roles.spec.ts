@@ -36,6 +36,7 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
     await form.getByRole('textbox', { name: /^Código/ }).fill(planCode);
     await form.getByLabel('Nombre').fill(planName);
     await form.getByRole('textbox', { name: /^CLP/ }).fill('12000');
+    await form.getByRole('checkbox', { name: 'Incluida' }).nth(0).check(); // Sucursales
     await form.getByRole('button', { name: 'Proponer plan' }).click();
     await expect(form.getByText(/Propuesta enviada/)).toBeVisible();
     await page.goto(`/admin/planes/${planCode}`);
@@ -59,6 +60,7 @@ test.describe.serial('Consola: roles, aprobaciones y datos de facturación', () 
     await form.getByRole('textbox', { name: /^Código/ }).fill(freeCode);
     await form.getByLabel('Nombre').fill(freeName);
     await form.getByRole('checkbox', { name: /Plan free/ }).check();
+    await form.getByRole('checkbox', { name: 'Incluida' }).nth(0).check(); // Sucursales
     await form.getByRole('button', { name: 'Crear plan' }).click();
     await expect(form.getByText(/Plan guardado/)).toBeVisible();
   });

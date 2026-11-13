@@ -118,7 +118,7 @@
 | App publicada | `https://agenda-peluqueria-virid.vercel.app` (Vercel, Root Directory `apps/web`, preset Next.js) |
 | Usuario del dueño | Cuenta con el email del dueño, rol `owner` en su negocio (plan `completo`) |
 | Migraciones | `20261120120000_platform_monthly_charges` (**local, falta producción**), `20261119120000_platform_roles_billing_profiles`, `20261118130000_platform_plans_advisor_fix`, `20261118120000_platform_plans`, `20261117120000_platform_admin`, `20261116120000_phase3a_rental_catalog`, `20261115120000_phase3_currency`, `20261114130000_phase2d_advisor_fix`, `20261107000000_prototype_init`, `20261110120000_phase1_foundations`, `20261110130000_security_advisor_fixes`, `20261111120000_phase2a_bookings`, `20261112120000_phase2b_confirmation`, `20261112130000_phase2b_advisor_fix`, `20261113120000_phase2c_reminders`, `20261114120000_phase2d_commissions` (ver sección 6) |
-| Tests (A3b) | core 144 · notifications 7 · base de datos 186 · Playwright (corren en el CI) |
+| Tests (A3b) | core 145 · notifications 7 · base de datos 187 · Playwright (corren en el CI) |
 | Tarea programada | Job de `pg_cron` `agenda-tareas-programadas` (cada 15 min) → Edge Function `recordatorios` → `/api/tareas/recordatorios`. La URL de la función está en `app.settings.reminders_function_url` (dato por ambiente) |
 
 ### Mapa del código (dónde está cada cosa)

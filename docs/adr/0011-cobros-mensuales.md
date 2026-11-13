@@ -30,7 +30,10 @@ Cada versión de plan define:
 - **precio neto por sucursal adicional** por moneda (`extra_branch_prices`);
 - **días de prueba** (`trial_days`).
 
-Pasan por la misma aprobación del dueño (ADR 0010). `comparePlanVersions` cuenta como empeoramiento incluir menos
+Pasan por la misma aprobación del dueño (ADR 0010).
+
+**Todo plan incluye la función Sucursales**, con un límite que no puede ser menor que las sucursales incluidas.
+Sin ella, quien elige el plan no puede crear su negocio. Lo validan el formulario y la base. `comparePlanVersions` cuenta como empeoramiento incluir menos
 sucursales o subir el precio por sucursal adicional.
 
 ## 3. Período de prueba

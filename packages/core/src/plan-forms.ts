@@ -100,6 +100,13 @@ export function parsePlanForm(form: Record<string, unknown>): PlanFormResult {
     features.push({ feature, enabled, limit: enabled ? limit : null });
   }
 
+  // Todo plan incluye al menos una sucursal: sin ella, quien lo elija no puede crear su negocio (ADR 0011)
+  const branches = features.find((f) => f.feature === 'branches');
+  if (!branches?.enabled) return { ok: false, message: 'El plan debe incluir la función Sucursales (al menos 1)' };
+  if (branches.limit !== null && branches.limit < includedBranches) {
+    return { ok: false, message: 'El límite de sucursales no puede ser menor que las sucursales incluidas en el precio' };
+  }
+
   return {
     ok: true,
     value: {

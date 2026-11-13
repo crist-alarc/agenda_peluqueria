@@ -88,6 +88,20 @@ describe('condiciones del plan', () => {
   });
 });
 
+describe('todo plan incluye sucursales', () => {
+  it('no se guarda un plan sin la función Sucursales, ni con un límite menor que las incluidas', async () => {
+    const save = (f: object[], included: number) =>
+      platformOwner.query(`select public.app_admin_save_plan('sin_sucursal', 'Sin sucursal', null, true, true, '{}', $1::jsonb, '{}'::jsonb, null, false, $2, '{}'::jsonb, 0)`, [
+        JSON.stringify(f),
+        included,
+      ]);
+    await expect(save([{ feature: 'resources', enabled: true, limit: 3 }], 1)).rejects.toThrow(/Sucursales/);
+    await expect(save([{ feature: 'branches', enabled: false, limit: null }], 1)).rejects.toThrow(/Sucursales/);
+    await expect(save([{ feature: 'branches', enabled: true, limit: 1 }], 2)).rejects.toThrow(/límite/);
+    await save([{ feature: 'branches', enabled: true, limit: null }], 2);
+  });
+});
+
 describe('período de prueba', () => {
   it('al crear el negocio: primero la prueba (sin cobro), después el plan', async () => {
     expect(await periods(trialBusiness)).toEqual([

@@ -112,10 +112,21 @@ describe('cobro del mes', () => {
 describe('formulario de plan: sucursales y prueba', () => {
   it('lee sucursales incluidas, precio por sucursal adicional y días de prueba', async () => {
     const { parsePlanForm } = await import('./plan-forms');
-    const r = parsePlanForm({ code: 'pro', name: 'Pro', includedBranches: '2', extraBranch_CLP: '9.300', trialDays: '14' });
+    const base = { code: 'pro', name: 'Pro', feature_branches: 'on' };
+    const r = parsePlanForm({ ...base, includedBranches: '2', extraBranch_CLP: '9.300', trialDays: '14' });
     expect(r).toMatchObject({ ok: true, value: { includedBranches: 2, extraBranchPrices: { CLP: 9300 }, trialDays: 14 } });
-    expect(parsePlanForm({ code: 'pro', name: 'Pro', includedBranches: '0' })).toMatchObject({ ok: false });
-    expect(parsePlanForm({ code: 'pro', name: 'Pro', trialDays: '400' })).toMatchObject({ ok: false });
-    expect(parsePlanForm({ code: 'pro', name: 'Pro' })).toMatchObject({ ok: true, value: { includedBranches: 1, trialDays: 0 } });
+    expect(parsePlanForm({ ...base, includedBranches: '0' })).toMatchObject({ ok: false });
+    expect(parsePlanForm({ ...base, trialDays: '400' })).toMatchObject({ ok: false });
+    expect(parsePlanForm(base)).toMatchObject({ ok: true, value: { includedBranches: 1, trialDays: 0 } });
+  });
+
+  it('todo plan incluye sucursales, con un límite no menor que las incluidas', async () => {
+    const { parsePlanForm } = await import('./plan-forms');
+    expect(parsePlanForm({ code: 'pro', name: 'Pro' })).toMatchObject({ ok: false, message: expect.stringMatching(/Sucursales/) });
+    expect(parsePlanForm({ code: 'pro', name: 'Pro', feature_branches: 'on', limit_branches: '1', includedBranches: '2' })).toMatchObject({
+      ok: false,
+      message: expect.stringMatching(/límite/),
+    });
+    expect(parsePlanForm({ code: 'pro', name: 'Pro', feature_branches: 'on', limit_branches: '', includedBranches: '2' })).toMatchObject({ ok: true });
   });
 });
