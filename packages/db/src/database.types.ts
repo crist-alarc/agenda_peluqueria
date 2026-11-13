@@ -767,7 +767,22 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "business_billing_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_billing_profiles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       business_entitlements: {
         Row: {
@@ -906,6 +921,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_free_grant_id_fkey"
+            columns: ["free_grant_id"]
+            isOneToOne: false
+            referencedRelation: "free_plan_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_next_plan_code_fkey"
+            columns: ["next_plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "business_subscriptions_plan_code_fkey"
@@ -1338,7 +1367,43 @@ export type Database = {
           requested_by?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "free_plan_grants_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_next_plan_code_fkey"
+            columns: ["next_plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "free_plan_grants_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       holidays: {
         Row: {
@@ -1621,6 +1686,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "plan_versions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "plan_versions_plan_code_fkey"
             columns: ["plan_code"]
             isOneToOne: false
@@ -1693,6 +1765,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "platform_admins_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "platform_admins_user_id_fkey"
             columns: ["user_id"]
@@ -2372,9 +2451,7 @@ export type Database = {
       app_admin_approvals: { Args: never; Returns: Json }
       app_admin_billing_setup: { Args: never; Returns: Json }
       app_admin_business_billing: {
-        Args: {
-          p_business_id: string
-        }
+        Args: { p_business_id: string }
         Returns: Json
       }
       app_admin_business_plan: {
@@ -2391,18 +2468,11 @@ export type Database = {
       }
       app_admin_clients: { Args: { p_organization_id?: string }; Returns: Json }
       app_admin_decide_free_plan: {
-        Args: {
-          p_approve: boolean
-          p_grant_id: string
-        }
+        Args: { p_approve: boolean; p_grant_id: string }
         Returns: undefined
       }
       app_admin_decide_plan_version: {
-        Args: {
-          p_approve: boolean
-          p_note?: string
-          p_version_id: string
-        }
+        Args: { p_approve: boolean; p_note?: string; p_version_id: string }
         Returns: undefined
       }
       app_admin_end_override: {
@@ -2410,10 +2480,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_extend_billing_grace: {
-        Args: {
-          p_business_id: string
-          p_until: string
-        }
+        Args: { p_business_id: string; p_until: string }
         Returns: undefined
       }
       app_admin_migrate_plan_version: {
@@ -2426,9 +2493,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_remove_team_member: {
-        Args: {
-          p_user_id: string
-        }
+        Args: { p_user_id: string }
         Returns: undefined
       }
       app_admin_request_free_plan: {
@@ -2455,10 +2520,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_save_billing_profile: {
-        Args: {
-          p_business_id: string
-          p_profile: Json
-        }
+        Args: { p_business_id: string; p_profile: Json }
         Returns: undefined
       }
       app_admin_save_plan: {
@@ -2477,9 +2539,7 @@ export type Database = {
         Returns: string
       }
       app_admin_save_settings: {
-        Args: {
-          p_billing_grace_min_days: number
-        }
+        Args: { p_billing_grace_min_days: number }
         Returns: undefined
       }
       app_admin_save_tax_rule: {
@@ -2493,10 +2553,7 @@ export type Database = {
         Returns: undefined
       }
       app_admin_set_team_member: {
-        Args: {
-          p_email: string
-          p_role: string
-        }
+        Args: { p_email: string; p_role: string }
         Returns: undefined
       }
       app_admin_settings: { Args: never; Returns: Json }
@@ -2527,12 +2584,7 @@ export type Database = {
         Args: { p_business_id: string; p_to: string }
         Returns: string[]
       }
-      app_business_billing: {
-        Args: {
-          p_business_id: string
-        }
-        Returns: Json
-      }
+      app_business_billing: { Args: { p_business_id: string }; Returns: Json }
       app_claim_reminder: { Args: { p_booking_id: string }; Returns: boolean }
       app_create_booking: {
         Args: {
@@ -2598,10 +2650,7 @@ export type Database = {
         Returns: undefined
       }
       app_save_billing_profile: {
-        Args: {
-          p_business_id: string
-          p_profile: Json
-        }
+        Args: { p_business_id: string; p_profile: Json }
         Returns: undefined
       }
       app_set_item_shares: {

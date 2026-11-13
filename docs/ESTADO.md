@@ -185,8 +185,9 @@
 - Consola A3a (2026-11-13): `platform_roles_billing_profiles` aplicada **a mano por el dueño desde el SQL Editor**,
   porque el conector de Supabase falló con un error 502 en esa sesión. Se registró en
   `supabase_migrations.schema_migrations`. Verificado: rol `owner`, plazo 2026-11-30 en los negocios existentes,
-  mínimo 15 días y funciones creadas. **Pendiente cuando vuelva el conector:** regenerar `database.types.ts` desde
-  producción (hoy está editado a mano) y revisar el Security Advisor.
+  mínimo 15 días y funciones creadas. Tipos regenerados desde producción. Security Advisor sin avisos nuevos:
+  `free_plan_grants` y `platform_settings` sin políticas es intencional (solo se leen por funciones `app_admin_*`), y
+  las funciones nuevas para usuarios con sesión validan rol o membresía por dentro.
   - Si el SQL Editor responde "column role already exists", la migración ya estaba aplicada: no repetirla.
 - Consola A2 (2026-11-12): `platform_plans` y `platform_plans_advisor_fix` aplicadas. Huella igual a la local en
   las 29 funciones nuevas o cambiadas. Los 2 negocios existentes quedaron con versión de plan y su primer tramo.
