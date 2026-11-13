@@ -2,9 +2,20 @@
  * Datos de facturación de cada negocio y días de gracia (ADR 0010). El dueño del negocio los
  * guarda con app_save_billing_profile; la consola, con app_admin_save_billing_profile.
  */
-import type { BillingProfile, BillingStatus } from '@agenda/core';
+import type { BillingProfile, BillingStatus, ChargeStatus } from '@agenda/core';
 import type { DbClient } from '../client';
 import { unwrap, unwrapMaybe } from '../errors';
+
+/** Plazo y forma de pago acordados con un negocio, o los por defecto. */
+export type BusinessPayment = {
+  termId: string | null;
+  termName: string | null;
+  termDays: number | null;
+  termIsDefault: boolean;
+  methodId: string | null;
+  methodName: string | null;
+  methodIsDefault: boolean;
+};
 
 export type StoredBillingProfile = BillingProfile & { updatedAt: string };
 
@@ -17,6 +28,8 @@ export type BusinessBilling = {
   profile: StoredBillingProfile | null;
   /** Datos de otro negocio del mismo dueño, para completar más rápido. */
   suggestion: (BillingProfile & { fromBusiness: string }) | null;
+  /** Solo para el dueño: cobros facturados y vencidos sin pagar (ADR 0011). */
+  overdue: { count: number; oldestDueOn: string } | null;
 };
 
 export async function getBusinessBilling(db: DbClient, businessId: string): Promise<BusinessBilling | null> {
@@ -43,6 +56,8 @@ export type AdminBusinessBilling = {
   profile: StoredBillingProfile | null;
   freePlan: { endsOn: string | null; nextPlanCode: string | null; reason: string; approvedAt: string | null; approvedBy: string | null } | null;
   freeRequests: FreePlanRequest[];
+  payment: BusinessPayment;
+  charges: Array<{ id: string; month: string; status: ChargeStatus; currency: string; gross: number; folio: string | null; dueOn: string | null; paidOn: string | null }>;
 };
 
 export async function getAdminBusinessBilling(db: DbClient, businessId: string): Promise<AdminBusinessBilling | null> {

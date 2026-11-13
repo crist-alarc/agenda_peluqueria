@@ -117,3 +117,15 @@ export async function setBillingGrace(businessId: string, until: string): Promis
   });
   if (!res.ok) throw new Error(`No se pudo cambiar el plazo: ${res.status} ${await res.text()}`);
 }
+
+/** Mueve al pasado el inicio de los tramos de cobro y de las sucursales de un negocio, para probar un mes ya cerrado (ADR 0011). */
+export async function backdateBilling(businessId: string, startsOn: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SECRET_KEY para las pruebas');
+  const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+  for (const table of ['subscription_periods', 'branch_activity']) {
+    const res = await fetch(`${url}/rest/v1/${table}?business_id=eq.${businessId}`, { method: 'PATCH', headers, body: JSON.stringify({ starts_on: startsOn }) });
+    if (!res.ok) throw new Error(`No se pudo mover ${table}: ${res.status} ${await res.text()}`);
+  }
+}

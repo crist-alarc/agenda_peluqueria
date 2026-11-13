@@ -13,3 +13,4 @@ export * from './support';
 export * from './billing';
 export * from './plan-forms';
 export * from './billing-profile';
+export * from './monthly-charge';

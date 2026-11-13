@@ -44,6 +44,9 @@ export function PlanPicker({ offer, name = 'planCode' }: { offer: PublicPlans; n
               </span>
               {p.description && <span className="block text-sm text-muted-foreground">{p.description}</span>}
               {highlights.length > 0 && <span className="mt-1 block text-xs text-muted-foreground">{highlights.join(', ')}</span>}
+              {(p.trialDays ?? 0) > 0 && (
+                <span className="mt-1 block text-xs font-medium text-success">Los primeros {p.trialDays} días no se cobran</span>
+              )}
             </span>
           </label>
         );

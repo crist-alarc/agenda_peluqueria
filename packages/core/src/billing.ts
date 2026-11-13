@@ -14,7 +14,7 @@ import { FEATURES, type Feature } from './entitlements';
 export type TaxBreakdown = { net: number; tax: number; gross: number; rateBp: number };
 
 /** Redondeo al entero más cercano (mitades hacia arriba), sin errores de coma flotante en enteros grandes. */
-function roundDiv(numerator: number, denominator: number): number {
+export function roundDiv(numerator: number, denominator: number): number {
   const q = Math.floor(numerator / denominator);
   const r = numerator - q * denominator;
   return r * 2 >= denominator ? q + 1 : q;
@@ -44,8 +44,8 @@ export type SubscriptionPeriod = {
   startsOn: string;
   /** null = sigue vigente. */
   endsOn: string | null;
-  /** 'plan' se cobra; 'suspended' no se cobra. */
-  kind: 'plan' | 'suspended';
+  /** 'plan' se cobra; 'suspended' y 'trial' (período de prueba) no se cobran. */
+  kind: 'plan' | 'suspended' | 'trial';
   label: string;
   /** Precio neto mensual del tramo (0 si está suspendido). */
   monthlyNet: number;
@@ -80,7 +80,7 @@ export function prorateMonth(periods: readonly SubscriptionPeriod[], month: stri
     const to = Math.min(last, p.endsOn ? toUtc(p.endsOn) : last);
     if (to < from) continue;
     const days = Math.round((to - from) / DAY) + 1;
-    const net = p.kind === 'suspended' ? 0 : roundDiv(p.monthlyNet * days, total);
+    const net = p.kind === 'plan' ? roundDiv(p.monthlyNet * days, total) : 0;
     lines.push({ label: p.label, kind: p.kind, from: toDate(from), to: toDate(to), days, net });
   }
   return { month, daysInMonth: total, lines, net: lines.reduce((sum, l) => sum + l.net, 0) };
@@ -99,6 +99,10 @@ export type PlanVersionSpec = {
   features: readonly PlanFeatureSpec[];
   /** Precio neto mensual por moneda de cobro, ej. { CLP: 15000, USD: 1700 }. */
   prices: Readonly<Record<string, number>>;
+  /** Sucursales incluidas en el precio (ADR 0011). Por defecto, 1. */
+  includedBranches?: number;
+  /** Precio neto mensual por cada sucursal adicional, por moneda. */
+  extraBranchPrices?: Readonly<Record<string, number>>;
 };
 
 export type PlanComparison = {
@@ -153,6 +157,18 @@ export function comparePlanVersions(previous: PlanVersionSpec, next: PlanVersion
     }
     if (b > a) worse.push(`Precio en ${currency}: sube`);
     else if (b < a) better.push(`Precio en ${currency}: baja`);
+  }
+  const inA = previous.includedBranches ?? 1;
+  const inB = next.includedBranches ?? 1;
+  if (inB > inA) better.push(`Sucursales incluidas: de ${inA} a ${inB}`);
+  else if (inB < inA) worse.push(`Sucursales incluidas: de ${inA} a ${inB}`);
+  const extraA = previous.extraBranchPrices ?? {};
+  const extraB = next.extraBranchPrices ?? {};
+  for (const currency of new Set([...Object.keys(extraA), ...Object.keys(extraB)])) {
+    const a = extraA[currency] ?? 0;
+    const b = extraB[currency] ?? 0;
+    if (b > a) worse.push(`Sucursal adicional en ${currency}: sube`);
+    else if (b < a) better.push(`Sucursal adicional en ${currency}: baja`);
   }
   return { kind: worse.length > 0 ? 'worse' : better.length > 0 ? 'improvement' : 'same', better, worse };
 }

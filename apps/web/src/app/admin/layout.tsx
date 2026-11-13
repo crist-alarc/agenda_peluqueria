@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { PLATFORM_ROLES } from '@agenda/core';
-import { listApprovals } from '@agenda/db';
+import { formatMoney } from '@agenda/core';
+import { getBillingAlerts, listApprovals } from '@agenda/db';
 import { NavLink } from '@/components/nav-link';
 import { requirePlatformAdmin } from '@/lib/session';
 import { signOutAction } from '../(auth)/actions';
@@ -14,7 +15,10 @@ export const metadata = { title: { default: 'Plataforma', template: '%s · Plata
  */
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const { db, user, role } = await requirePlatformAdmin();
-  const approvals = await listApprovals(db);
+  const [approvals, alerts] = await Promise.all([listApprovals(db), getBillingAlerts(db)]);
+  const overdueTotals = Object.entries(
+    alerts.overdue.reduce<Record<string, number>>((acc, o) => ({ ...acc, [o.currency]: (acc[o.currency] ?? 0) + o.gross }), {}),
+  );
   // Lo que esta persona puede decidir: el dueño, las versiones de planes; los administradores, los planes free
   const pending =
     (role === 'owner' ? approvals.planVersions.length : 0) +
@@ -33,6 +37,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             </NavLink>
             <NavLink href="/admin/planes" variant="platform">
               Planes
+            </NavLink>
+            <NavLink href="/admin/cobros" variant="platform">
+              Cobros
+              {alerts.overdue.length > 0 && (
+                <span className="ml-1.5 inline-flex min-w-5 justify-center rounded-full bg-destructive px-1.5 text-xs font-semibold text-white tabular-nums">
+                  {alerts.overdue.length}
+                </span>
+              )}
             </NavLink>
             <NavLink href="/admin/facturacion" variant="platform">
               Facturación
@@ -63,6 +75,24 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </div>
         </div>
       </header>
+      {(alerts.overdue.length > 0 || alerts.monthToGenerate) && (
+        <div className="border-b bg-muted/50">
+          <div className="mx-auto flex max-w-6xl flex-wrap gap-x-8 gap-y-1 px-4 py-2 text-sm">
+            {alerts.overdue.length > 0 && (
+              <Link href="/admin/cobros/vencidos" className="font-medium text-destructive hover:underline">
+                {alerts.overdue.length} {alerts.overdue.length === 1 ? 'cobro vencido' : 'cobros vencidos'} sin pagar:{' '}
+                {overdueTotals.map(([cur, total]) => formatMoney(total, cur)).join(' y ')}
+              </Link>
+            )}
+            {alerts.monthToGenerate && (
+              <Link href={`/admin/cobros?mes=${alerts.monthToGenerate}`} className="hover:underline">
+                Faltan los cobros de{' '}
+                {new Intl.DateTimeFormat('es-CL', { month: 'long', timeZone: 'UTC' }).format(new Date(`${alerts.monthToGenerate}-15T12:00:00Z`))}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );

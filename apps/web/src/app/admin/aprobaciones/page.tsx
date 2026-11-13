@@ -64,7 +64,15 @@ export default async function ApprovalsPage() {
 function PlanVersionItem({ v, canDecide }: { v: PendingPlanVersion; canDecide: boolean }) {
   const changes =
     v.currentFeatures && v.currentPrices
-      ? comparePlanVersions({ features: v.currentFeatures, prices: v.currentPrices }, { features: v.features, prices: v.prices })
+      ? comparePlanVersions(
+          {
+            features: v.currentFeatures,
+            prices: v.currentPrices,
+            includedBranches: v.currentIncludedBranches ?? 1,
+            extraBranchPrices: v.currentExtraBranchPrices ?? {},
+          },
+          { features: v.features, prices: v.prices, includedBranches: v.includedBranches, extraBranchPrices: v.extraBranchPrices },
+        )
       : null;
   const prices = BILLING_CURRENCY_CODES.filter((c) => v.prices[c] !== undefined || v.currentPrices?.[c] !== undefined);
   return (
@@ -97,6 +105,12 @@ function PlanVersionItem({ v, canDecide }: { v: PendingPlanVersion; canDecide: b
           </tbody>
         </table>
 
+        {(v.trialDays > 0 || (v.currentTrialDays ?? 0) > 0) && v.trialDays !== v.currentTrialDays && (
+          <p className="mt-2">
+            Prueba para negocios nuevos: {v.trialDays > 0 ? `${v.trialDays} días` : 'sin prueba'}
+            {v.currentTrialDays != null && ` (antes ${v.currentTrialDays > 0 ? `${v.currentTrialDays} días` : 'sin prueba'})`}
+          </p>
+        )}
         {changes ? (
           (changes.better.length > 0 || changes.worse.length > 0) && (
             <ul className="mt-2 space-y-0.5">

@@ -29,7 +29,7 @@ test.describe.serial('Consola: planes, cobro y suspensión', () => {
     const form = page.getByRole('form', { name: 'Plan' });
     await form.getByRole('textbox', { name: /^Código/ }).fill(planCode);
     await form.getByLabel('Nombre').fill(planName);
-    await form.getByLabel('CLP').fill('10000');
+    await form.getByLabel('CLP', { exact: true }).fill('10000');
     await form.getByRole('checkbox', { name: 'Incluida' }).nth(0).check(); // Sucursales
     await form.getByLabel('Límite de Sucursales').fill('1');
     await form.getByRole('checkbox', { name: 'Incluida' }).nth(1).check(); // Recursos

@@ -12,3 +12,4 @@ export * from './storage';
 export * from './repositories/platform';
 export * from './repositories/plans';
 export * from './repositories/billing';
+export * from './repositories/charges';
