@@ -30,7 +30,7 @@ test.describe.serial('Consola: cobros mensuales', () => {
     const form = page.getByRole('form', { name: 'Plan' });
     await form.getByRole('textbox', { name: /^Código/ }).fill(planCode);
     await form.getByLabel('Nombre').fill(planName);
-    await form.getByLabel('CLP', { exact: true }).fill('10000');
+    await form.getByRole('textbox', { name: /^CLP/ }).fill('10000');
     await form.getByLabel(/Sucursal adicional al mes, neto en CLP/).fill('3000');
     await form.getByRole('button', { name: 'Crear plan' }).click();
     await expect(form.getByText(/Plan guardado/)).toBeVisible();
